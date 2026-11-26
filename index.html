@@ -452,6 +452,12 @@ button,select,.board{touch-action:manipulation}
 .brcols button{height:62px;border:0;border-radius:12px;background:var(--raise);color:var(--ink);font:800 17px var(--f-body);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 3px 0 #1C1B19;touch-action:manipulation}
 .brcols button i{width:22px;height:22px;border-radius:50%;background:var(--c)}.brcols button.bad{background:var(--bad-soft)}
 .brover{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;background:var(--surface);border-radius:14px;padding:26px 20px;width:min(100%,420px)}
+.brelo{display:grid;grid-template-columns:auto 1fr;column-gap:14px;align-items:center;background:var(--surface);border-radius:12px;padding:14px 16px}
+.brelo span{grid-row:1;font-weight:800;color:var(--muted);text-transform:uppercase;font-size:13px;letter-spacing:.04em}.brelo b{grid-row:2;font:900 38px var(--f-display);color:var(--accent-ink)}
+.brelo small{grid-column:2;grid-row:1/3;color:var(--muted);font-size:13.5px;line-height:1.35}
+.brr{margin-left:8px;font-size:13px;font-weight:800;color:var(--ink);background:var(--raise);border-radius:6px;padding:1px 7px;vertical-align:2px}
+.brdelta{display:flex;align-items:baseline;gap:10px}.brdelta span{color:var(--muted);font-weight:700}.brdelta b{font:900 28px var(--f-display)}
+.brdelta i{font-style:normal;font-weight:800;color:var(--muted)}.brdelta i.up{color:var(--good)}.brdelta i.dn{color:var(--bad)}
 .brover .big{font:900 36px var(--f-display)}.brover p{margin:0;color:var(--muted)}.brover .nb{color:var(--accent-ink);font-size:18px}.brover .row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:8px}
 @media (max-width:520px){.brshow{font-size:64px}.brword{font-size:42px}.brq{font-size:38px}}
 .statsview{position:fixed;inset:0;z-index:80;background:var(--bg);overflow:auto;padding-top:env(safe-area-inset-top, 0px);padding-bottom:calc(20px + env(safe-area-inset-bottom, 0px))}
@@ -4873,18 +4879,35 @@ const Brain=(function(){
   ];
   const G=id=>GAMES.find(x=>x.id===id);
   const nm=g=>FE(g.name[0],g.name[1]);
+
+  /* Aivo-Elo: jokainen tulos muunnetaan suoritustasoksi (taulukko), ja luku liikkuu sitä kohti kuten shakin Elo.
+     Viisi ensimmäistä peliä liikuttavat lukua enemmän, jotta oikea taso löytyy nopeasti. */
+  const PERF={pairs:[[8,2000],[10,1700],[12,1450],[14,1250],[16,1100],[20,900],[26,700],[34,500],[45,300]],
+    squares:[[0,300],[2,600],[4,900],[6,1150],[8,1400],[10,1650],[12,1900],[15,2200]],
+    digits:[[0,200],[3,400],[4,600],[5,800],[6,1000],[7,1200],[8,1400],[9,1650],[10,1900],[12,2300]],
+    math:[[0,200],[5,500],[10,800],[15,1050],[20,1300],[25,1550],[30,1800],[40,2200]],
+    stroop:[[0,200],[10,500],[20,800],[28,1050],[35,1300],[42,1550],[50,1850],[60,2200]]};
+  function perf(id,v){const T=PERF[id];if(v<=T[0][0])return T[0][1];if(v>=T[T.length-1][0])return T[T.length-1][1];
+    for(let i=1;i<T.length;i++)if(v<=T[i][0]){const [x0,y0]=T[i-1],[x1,y1]=T[i];return Math.round(y0+(y1-y0)*(v-x0)/(x1-x0));}}
+  let R={};try{R=JSON.parse(localStorage.getItem('av-brain-r')||'{}')||{};}catch(_){R={};}
+  function rate(id,v){const p=perf(id,v),o=R[id]||{r:800,n:0},w=o.n<5?.5:.2;
+    const nr=Math.max(100,Math.round(o.r+(p-o.r)*w));R[id]={r:nr,n:o.n+1};try{localStorage.setItem('av-brain-r',JSON.stringify(R));}catch(_){}
+    return {p,old:o.n?o.r:null,r:nr,d:nr-o.r,prov:o.n+1<5};}
+  function overall(){const L=GAMES.filter(g=>R[g.id]);return L.length?Math.round(L.reduce((s,g)=>s+R[g.id].r,0)/L.length):null;}
   function record(id,v){const o=best[id];const nb=o==null||(G(id).low?v<o:v>o);if(nb){best[id]=v;save();}return nb;}
   function menu(){clr();
-    el().innerHTML='<p class="legend" style="margin:0">'+FE('Lyhyitä pelejä, jotka treenaavat muistia, keskittymistä ja päättelyä. Yksi kierros vie 1–3 minuuttia.','Short games that train memory, focus and reasoning. One round takes 1–3 minutes.')+'</p><div class="brgrid">'+
-      GAMES.map(g=>'<button class="brcard" data-brain="'+g.id+'"><span class="hic">'+pieceSvg('w',g.ic,'classic')+'</span><span class="bt"><b>'+esc(nm(g))+'</b><small>'+esc(FE(g.desc[0],g.desc[1]))+'</small><em>'+(best[g.id]!=null?FE('Ennätys: ','Best: ')+g.fmt(best[g.id]):FE('Ei vielä pelattu','Not played yet'))+'</em></span></button>').join('')+'</div>';
+    const ov=overall();
+    el().innerHTML='<div class="brelo"><span>'+FE('Aivo-Elo','Brain Elo')+'</span><b>'+(ov??'–')+'</b><small>'+(ov?FE('Pelattujen pelien lukujen keskiarvo. Jokaisella pelillä on oma lukunsa, joka nousee ja laskee tulostesi mukaan.','Average of the games you have played. Each game has its own rating that goes up and down with your results.'):FE('Pelaa mitä tahansa peliä, niin saat Elo-luvun. Viisi ensimmäistä peliä ovat arviointipelejä.','Play any game to get a rating. Your first five games in each are placement games.'))+'</small></div><p class="legend" style="margin:0">'+FE('Lyhyitä pelejä, jotka treenaavat muistia, keskittymistä ja päättelyä. Yksi kierros vie 1–3 minuuttia.','Short games that train memory, focus and reasoning. One round takes 1–3 minutes.')+'</p><div class="brgrid">'+
+      GAMES.map(g=>'<button class="brcard" data-brain="'+g.id+'"><span class="hic">'+pieceSvg('w',g.ic,'classic')+'</span><span class="bt"><b>'+esc(nm(g))+(R[g.id]?'<span class="brr">'+R[g.id].r+(R[g.id].n<5?'?':'')+'</span>':'')+'</b><small>'+esc(FE(g.desc[0],g.desc[1]))+'</small><em>'+(best[g.id]!=null?FE('Ennätys: ','Best: ')+g.fmt(best[g.id]):FE('Ei vielä pelattu','Not played yet'))+'</em></span></button>').join('')+'</div>';
   }
   function frame(id,inner){
     el().innerHTML='<div class="brhead"><button class="btn" data-brmenu>‹ '+FE('Pelit','Games')+'</button><b>'+esc(nm(G(id)))+'</b><span class="brstat" id="br-stat"></span></div><div class="brplay" id="br-play">'+inner+'</div>';
   }
   const stat=h=>{const s=$('#br-stat');if(s)s.innerHTML=h;};
   function over(id,v,line){
-    clr();const nb=record(id,v),g=G(id);stat('');
-    $('#br-play').innerHTML='<div class="brover"><div class="big">'+g.fmt(v)+'</div>'+(line?'<p>'+line+'</p>':'')+'<p>'+(nb?'<b class="nb">'+FE('Uusi ennätys!','New best!')+'</b>':FE('Ennätys: ','Best: ')+g.fmt(best[id]))+'</p><div class="row"><button class="btn primary" data-brain="'+id+'">'+FE('Pelaa uudestaan','Play again')+'</button><button class="btn" data-brmenu>'+FE('Muut pelit','Other games')+'</button></div></div>';
+    clr();const nb=record(id,v),g=G(id),E=rate(id,v);stat('');
+    const eh='<div class="brdelta"><span>'+FE('Elo','Rating')+'</span><b>'+E.r+(E.prov?'?':'')+'</b><i class="'+(E.d>0?'up':E.d<0?'dn':'')+'">'+(E.old==null?FE('ensimmäinen peli','first game'):(E.d>0?'+':'')+E.d)+'</i></div><p>'+FE('Tämän kierroksen taso: ','This round played at: ')+'<b>'+E.p+'</b>'+(E.prov?' · '+FE('arviointipelejä jäljellä ','placement games left ')+(5-R[id].n):'')+'</p>';
+    $('#br-play').innerHTML='<div class="brover"><div class="big">'+g.fmt(v)+'</div>'+eh+(line?'<p>'+line+'</p>':'')+'<p>'+(nb?'<b class="nb">'+FE('Uusi ennätys!','New best!')+'</b>':FE('Ennätys: ','Best: ')+g.fmt(best[id]))+'</p><div class="row"><button class="btn primary" data-brain="'+id+'">'+FE('Pelaa uudestaan','Play again')+'</button><button class="btn" data-brmenu>'+FE('Muut pelit','Other games')+'</button></div></div>';
     Sound.play(nb?'solved':'end');
   }
   const keypad=(extra)=>'<div class="brkeys">'+[1,2,3,4,5,6,7,8,9].map(n=>'<button data-k="'+n+'">'+n+'</button>').join('')+'<button data-k="B" aria-label="'+FE('Pyyhi','Delete')+'">⌫</button><button data-k="0">0</button>'+(extra||'<span></span>')+'</div>';
