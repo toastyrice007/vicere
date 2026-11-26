@@ -415,6 +415,45 @@ button,select,.board{touch-action:manipulation}
 }
 /* Kehitys-näkymä */
 @media (max-width:960px){#btn-stats{margin-left:6px;color:var(--ink);background:var(--btn2)}}
+/* Aivotreeni */
+.brgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+.brcard{display:flex;gap:14px;align-items:flex-start;text-align:left;font:inherit;color:var(--ink);background:var(--surface);border:2px solid transparent;border-radius:12px;padding:14px;cursor:pointer;box-shadow:0 3px 0 #1C1B19}
+.brcard:hover{border-color:var(--line)}
+.brcard .hic{flex:none;width:46px;height:46px;border-radius:10px;background:var(--raise);display:flex;align-items:center;justify-content:center}.brcard .hic .pcs{width:80%;height:80%}
+.brcard .bt{display:flex;flex-direction:column;gap:4px}.brcard b{font-size:17px}.brcard small{color:var(--muted);font-size:13.5px;line-height:1.35}.brcard em{font-style:normal;font-weight:700;font-size:13px;color:var(--accent-ink)}
+.brhead{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.brhead b{font:800 19px var(--f-display);flex:1}
+.brstat{font-size:15px;color:var(--muted)}.brstat b{color:var(--ink)}.brstat .hot{color:var(--bad)}
+.lives{color:var(--bad);letter-spacing:2px}.lives i{font-style:normal;color:var(--line)}
+.brplay{display:flex;flex-direction:column;align-items:center;gap:14px;padding:6px 0 10px}
+.brhint{margin:0;color:var(--muted);font-size:15px;text-align:center;min-height:1.3em}
+.brcards{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:min(100%,440px)}
+.mc{aspect-ratio:1;border:0;border-radius:10px;cursor:pointer;padding:0;background:var(--sq-d);position:relative;box-shadow:0 3px 0 rgba(0,0,0,.35);transition:transform .2s,background .2s}
+.mc::before{content:'?';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:900 28px var(--f-display);color:rgba(255,255,255,.55)}
+.mc .f{position:absolute;inset:8%;display:flex;opacity:0;transition:opacity .15s}.mc .f .pcs{width:100%;height:100%}
+.mc.up{background:var(--sq-l)}.mc.up::before{content:''}.mc.up .f{opacity:1}
+.mc.ok{background:var(--good-soft);box-shadow:inset 0 0 0 3px var(--good)}
+.brboard{display:grid;grid-template-columns:repeat(var(--n),1fr);width:min(100%,420px);border-radius:8px;overflow:hidden;box-shadow:0 4px 0 rgba(0,0,0,.35)}
+.bs{aspect-ratio:1;border:0;padding:0;cursor:pointer;transition:background .15s}.bs.l{background:var(--sq-l)}.bs.d{background:var(--sq-d)}
+.bs.lit{background:var(--accent)!important}.bs.show{background:var(--good)!important;opacity:.75}.bs.bad{background:var(--bad)!important}
+.brshow{font:900 76px var(--f-display);min-height:100px;display:flex;align-items:center;justify-content:center;opacity:.15;transition:opacity .12s;text-align:center}
+.brshow.on{opacity:1}.brshow.q{opacity:1;font-size:22px;color:var(--muted)}
+.brq{font:900 44px var(--f-display);min-height:60px;text-align:center}
+.brtyped{display:flex;gap:6px;justify-content:center;min-height:52px;flex-wrap:wrap}
+.brtyped i{font-style:normal;width:38px;height:50px;border-radius:8px;background:var(--raise);display:flex;align-items:center;justify-content:center;font:800 26px var(--f-display)}
+.brtyped.one{min-width:150px;padding:0 16px;border-radius:10px;background:var(--raise);align-items:center;font:800 32px var(--f-display)}
+.brtyped.ok i,.brtyped.one.ok{background:var(--good-soft);color:var(--good)}.brtyped.bad i,.brtyped.one.bad{background:var(--bad-soft);color:var(--bad)}
+.brkeys{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:min(100%,330px)}
+.brkeys button{height:58px;border:0;border-radius:10px;background:var(--raise);color:var(--ink);font:800 24px var(--f-display);cursor:pointer;box-shadow:0 3px 0 #1C1B19;touch-action:manipulation}
+.brkeys button:active{transform:translateY(2px);box-shadow:0 1px 0 #1C1B19}
+.brkeys button[data-k="S"]{font-size:15px}.brkeys.off{opacity:.35;pointer-events:none}
+.brword{font:900 54px var(--f-display);min-height:80px;display:flex;align-items:center;justify-content:center;text-align:center;letter-spacing:.02em}
+.brword.pop{animation:brpop .18s ease-out}@keyframes brpop{from{transform:scale(.85);opacity:.4}to{transform:none;opacity:1}}
+.brcols{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:min(100%,380px)}
+.brcols button{height:62px;border:0;border-radius:12px;background:var(--raise);color:var(--ink);font:800 17px var(--f-body);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 3px 0 #1C1B19;touch-action:manipulation}
+.brcols button i{width:22px;height:22px;border-radius:50%;background:var(--c)}.brcols button.bad{background:var(--bad-soft)}
+.brover{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;background:var(--surface);border-radius:14px;padding:26px 20px;width:min(100%,420px)}
+.brover .big{font:900 36px var(--f-display)}.brover p{margin:0;color:var(--muted)}.brover .nb{color:var(--accent-ink);font-size:18px}.brover .row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:8px}
+@media (max-width:520px){.brshow{font-size:64px}.brword{font-size:42px}.brq{font-size:38px}}
 .statsview{position:fixed;inset:0;z-index:80;background:var(--bg);overflow:auto;padding-top:env(safe-area-inset-top, 0px);padding-bottom:calc(20px + env(safe-area-inset-bottom, 0px))}
 .sv-inner{max-width:780px;margin:0 auto;padding-block:16px 30px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));display:flex;flex-direction:column;gap:14px}
 .sv-head{display:flex;align-items:center;justify-content:space-between;font:900 24px var(--f-display);position:sticky;top:0;background:var(--bg);padding:6px 0;z-index:2}
@@ -590,6 +629,7 @@ body.no-last .sq.last:not(.sel)::before{display:none}
       <button id="mode-free" role="tab" data-mode="free" aria-selected="false">Vapaa analyysi</button>
       <span class="sep" aria-hidden="true"></span>
       <button id="btn-import-top" data-act="import">Analysoi oma peli</button>
+      <button id="btn-brain-top" data-go="brain">Aivotreeni</button>
       <button id="btn-stats" data-go="stats">Kehitys</button>
       <button id="btn-settings-top" data-go="settings" title="Asetukset">Asetukset</button>
     </div>
@@ -894,6 +934,12 @@ body.no-last .sq.last:not(.sel)::before{display:none}
     <p class="legend">Asetukset tallentuvat tälle laitteelle.</p>
   </div>
 </div>
+<div class="statsview" id="brainview" hidden>
+  <div class="sv-inner">
+    <div class="sv-head"><b>Aivotreeni</b><button class="btn" id="btn-brain-close">Sulje</button></div>
+    <div id="brain" data-dyn></div>
+  </div>
+</div>
 <div class="statsview" id="botview" hidden>
   <div class="sv-inner">
     <div class="sv-head"><b>Valitse vastustaja</b><button class="btn" id="btn-bot-close">Sulje</button></div>
@@ -1035,7 +1081,7 @@ Object.assign(EN,{
   // Tuonti (kiinteät tekstit)
   'Tuo oma peli':'Import your game','Liitä peli PGN-muodossa':'Paste a game in PGN format','Chess.comissa avaa pelattu peli, paina':'On chess.com, open the finished game, press the','Jaa':'Share','-painiketta ja kopioi':'button and copy the',
   '. Liitä se tähän. Pelkät siirrot (esim.':'. Paste it here. Plain moves (e.g.',
-  'Kone':'Computer','Valitse vastustaja':'Choose your opponent','Luvut ovat arvioita. Elo-arviosi lasketaan bottien lukujen perusteella.':'The ratings are estimates. Your Elo estimate is calculated from them.','Jokaisella botilla on oma pelityyli, vahvuus ja tapa jutella. Luvut ovat arvioita. Elo-arviosi lasketaan bottien lukujen perusteella.':'Every bot has its own playing style, strength and way of chatting. The ratings are estimates. Your Elo estimate is calculated from the bots’ ratings.','Perusteet':'Basics','Avausteoria':'Opening theory','Strategia':'Strategy','Muut avaukset':'Other openings',
+  'Kone':'Computer','Valitse vastustaja':'Choose your opponent','Aivotreeni':'Brain training','Muisti- ja keskittymispelejä · ei shakkia':'Memory and focus games · no chess','Luvut ovat arvioita. Elo-arviosi lasketaan bottien lukujen perusteella.':'The ratings are estimates. Your Elo estimate is calculated from them.','Jokaisella botilla on oma pelityyli, vahvuus ja tapa jutella. Luvut ovat arvioita. Elo-arviosi lasketaan bottien lukujen perusteella.':'Every bot has its own playing style, strength and way of chatting. The ratings are estimates. Your Elo estimate is calculated from the bots’ ratings.','Perusteet':'Basics','Avausteoria':'Opening theory','Strategia':'Strategy','Muut avaukset':'Other openings',
   'Vasta-alkaja':'Newcomer','Aloittelija':'Beginner','Harrastaja':'Enthusiast','Kerhopelaaja':'Club player','Taitava':'Skilled',
   'Kaikki teemat':'All themes','Kertaus: väärin menneet':'Review: missed puzzles','Hahmotus: kuvittele siirrot':'Visualization: imagine the moves','Kaikki mattipulmat':'All mate puzzles',
   'Pitkät matit (3–4 siirtoa)':'Long mates (3–4 moves)','Haarukat':'Forks','Takarivin matit':'Back-rank mates','Suojaamattomat nappulat':'Undefended pieces','Paljastetut ja kaksoisshakit':'Discovered and double checks',
@@ -4806,6 +4852,150 @@ $('#sheet-scrim').addEventListener('click',()=>openSheet(false));
 $('#setup').addEventListener('click',e=>{const b=e.target.closest('.btn');if(b&&b.id!=='btn-preset'&&b.id!=='btn-sheet-close')setTimeout(()=>openSheet(false),60);});
 document.querySelectorAll('.bottomnav [data-ic]').forEach(el=>{el.innerHTML=pieceSvg('w',el.dataset.ic,'classic');});
 
+/* ------------------------------------------------------------------ */
+/* Aivotreeni: lyhyitä muisti- ja keskittymispelejä (ei shakkia). Ennätykset tallentuvat laitteelle. */
+const Brain=(function(){
+  let best={};try{best=JSON.parse(localStorage.getItem('av-brain')||'{}')||{};}catch(_){best={};}
+  const save=()=>{try{localStorage.setItem('av-brain',JSON.stringify(best));}catch(_){}};
+  const el=()=>$('#brain');
+  let timers=[],H=null,KH=null;
+  const clr=()=>{timers.forEach(x=>{clearTimeout(x);clearInterval(x);});timers=[];H=null;KH=null;};
+  const later=(f,ms)=>{const x=setTimeout(f,ms);timers.push(x);return x;};
+  const every=(f,ms)=>{const x=setInterval(f,ms);timers.push(x);return x;};
+  const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+  const sh=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+  const GAMES=[
+   {id:'pairs',ic:'n',name:['Muistipeli','Memory pairs'],desc:['Käännä kortit ja etsi parit. Mitä vähemmän yrityksiä, sitä parempi.','Flip the cards and find the pairs. Fewer tries is better.'],fmt:v=>FE(v+' yritystä',v+' tries'),low:true},
+   {id:'squares',ic:'r',name:['Ruutumuisti','Square memory'],desc:['Ruudut välähtävät laudalla. Muista ne ja napauta samat ruudut. Kolme elämää.','Squares flash on the board. Remember them and tap the same ones. Three lives.'],fmt:v=>FE('taso '+v,'level '+v)},
+   {id:'digits',ic:'p',name:['Numeromuisti','Digit span'],desc:['Numerot näytetään yksi kerrallaan. Kirjoita ne samassa järjestyksessä. Sarja pitenee joka kierroksella.','Digits appear one at a time. Type them back in order. The sequence grows every round.'],fmt:v=>FE(v+' numeroa',v+' digits')},
+   {id:'math',ic:'q',name:['Päässälasku','Mental math'],desc:['Ratkaise mahdollisimman monta laskua 60 sekunnissa. Laskut vaikeutuvat koko ajan.','Solve as many sums as you can in 60 seconds. They keep getting harder.'],fmt:v=>FE(v+' oikein',v+' correct')},
+   {id:'stroop',ic:'b',name:['Värisekoitus','Colour clash'],desc:['Sana kertoo yhden värin, mutta on kirjoitettu toisella. Napauta väriä, jolla sana on kirjoitettu, älä sanaa. 30 sekuntia.','The word names one colour but is printed in another. Tap the ink colour, not the word. 30 seconds.'],fmt:v=>FE(v+' pistettä',v+' points')}
+  ];
+  const G=id=>GAMES.find(x=>x.id===id);
+  const nm=g=>FE(g.name[0],g.name[1]);
+  function record(id,v){const o=best[id];const nb=o==null||(G(id).low?v<o:v>o);if(nb){best[id]=v;save();}return nb;}
+  function menu(){clr();
+    el().innerHTML='<p class="legend" style="margin:0">'+FE('Lyhyitä pelejä, jotka treenaavat muistia, keskittymistä ja päättelyä. Yksi kierros vie 1–3 minuuttia.','Short games that train memory, focus and reasoning. One round takes 1–3 minutes.')+'</p><div class="brgrid">'+
+      GAMES.map(g=>'<button class="brcard" data-brain="'+g.id+'"><span class="hic">'+pieceSvg('w',g.ic,'classic')+'</span><span class="bt"><b>'+esc(nm(g))+'</b><small>'+esc(FE(g.desc[0],g.desc[1]))+'</small><em>'+(best[g.id]!=null?FE('Ennätys: ','Best: ')+g.fmt(best[g.id]):FE('Ei vielä pelattu','Not played yet'))+'</em></span></button>').join('')+'</div>';
+  }
+  function frame(id,inner){
+    el().innerHTML='<div class="brhead"><button class="btn" data-brmenu>‹ '+FE('Pelit','Games')+'</button><b>'+esc(nm(G(id)))+'</b><span class="brstat" id="br-stat"></span></div><div class="brplay" id="br-play">'+inner+'</div>';
+  }
+  const stat=h=>{const s=$('#br-stat');if(s)s.innerHTML=h;};
+  function over(id,v,line){
+    clr();const nb=record(id,v),g=G(id);stat('');
+    $('#br-play').innerHTML='<div class="brover"><div class="big">'+g.fmt(v)+'</div>'+(line?'<p>'+line+'</p>':'')+'<p>'+(nb?'<b class="nb">'+FE('Uusi ennätys!','New best!')+'</b>':FE('Ennätys: ','Best: ')+g.fmt(best[id]))+'</p><div class="row"><button class="btn primary" data-brain="'+id+'">'+FE('Pelaa uudestaan','Play again')+'</button><button class="btn" data-brmenu>'+FE('Muut pelit','Other games')+'</button></div></div>';
+    Sound.play(nb?'solved':'end');
+  }
+  const keypad=(extra)=>'<div class="brkeys">'+[1,2,3,4,5,6,7,8,9].map(n=>'<button data-k="'+n+'">'+n+'</button>').join('')+'<button data-k="B" aria-label="'+FE('Pyyhi','Delete')+'">⌫</button><button data-k="0">0</button>'+(extra||'<span></span>')+'</div>';
+
+  /* 1. Muistipeli: 8 paria shakkinappuloita */
+  function pairs(){clr();
+    const T=[];for(const c of 'wb')for(const p of 'kqrbnp')T.push(c+p);
+    const pick=sh(T).slice(0,8),deck=sh(pick.concat(pick));
+    frame('pairs','<div class="brcards">'+deck.map((p,i)=>'<button class="mc" data-i="'+i+'" aria-label="'+FE('Kortti','Card')+' '+(i+1)+'"><span class="f">'+pieceSvg(p[0],p[1])+'</span></button>').join('')+'</div>');
+    let open=[],tries=0,found=0,lock=false;const t0=Date.now();
+    const st=()=>stat(FE('Yritykset ','Tries ')+'<b>'+tries+'</b> · '+FE('Parit ','Pairs ')+'<b>'+found+'/8</b>');st();
+    H=e=>{const c=e.target.closest('.mc');if(!c||lock||c.classList.contains('up'))return;
+      c.classList.add('up');open.push(c);Sound.play('move');
+      if(open.length<2)return;tries++;
+      const [a,b]=open;open=[];
+      if(deck[a.dataset.i]===deck[b.dataset.i]){a.classList.add('ok');b.classList.add('ok');found++;Sound.play('good');st();
+        if(found===8)later(()=>over('pairs',tries,FE('Aikaa kului ','Time: ')+Math.round((Date.now()-t0)/1000)+' s'),500);}
+      else{lock=true;st();later(()=>{a.classList.remove('up');b.classList.remove('up');lock=false;},850);}
+    };
+  }
+
+  /* 2. Ruutumuisti: ruudut välähtävät, pelaaja napauttaa samat */
+  function squares(){clr();let level=1,lives=3;
+    function round(){
+      const n=level<3?4:level<6?5:6,cnt=Math.min(level+2,n*n-2);
+      const target=new Set(sh([...Array(n*n).keys()]).slice(0,cnt));
+      frame('squares','<div class="brboard" style="--n:'+n+'">'+[...Array(n*n).keys()].map(i=>'<button class="bs '+(((i%n)+Math.floor(i/n))%2?'d':'l')+'" data-s="'+i+'"></button>').join('')+'</div><p class="brhint" id="br-hint">'+FE('Katso tarkkaan…','Watch closely…')+'</p>');
+      stat(FE('Taso ','Level ')+'<b>'+level+'</b> · '+'<span class="lives">'+'♥'.repeat(lives)+'<i>'+'♥'.repeat(3-lives)+'</i></span>');
+      const B=[...document.querySelectorAll('#br-play .bs')];let input=false,hit=new Set(),miss=0;
+      later(()=>target.forEach(i=>B[i].classList.add('lit')),500);
+      later(()=>{target.forEach(i=>B[i].classList.remove('lit'));input=true;$('#br-hint').textContent=FE('Napauta ruudut, jotka välähtivät ('+cnt+')','Tap the squares that flashed ('+cnt+')');},500+900+cnt*170);
+      H=e=>{const b=e.target.closest('.bs');if(!b||!input)return;const i=+b.dataset.s;if(hit.has(i)||b.classList.contains('bad'))return;
+        if(target.has(i)){hit.add(i);b.classList.add('lit');Sound.play('move');
+          if(hit.size===cnt){input=false;level++;Sound.play('good');later(round,700);}}
+        else{b.classList.add('bad');miss++;Sound.play('bad');input=false;lives--;
+          target.forEach(j=>{if(!hit.has(j))B[j].classList.add('show');});
+          later(()=>{if(lives<=0)over('squares',level-1,FE('Viimeisellä tasolla piti muistaa '+cnt+' ruutua.','The last level had '+cnt+' squares.'));else round();},1300);}
+      };
+    }
+    round();
+  }
+
+  /* 3. Numeromuisti */
+  function digits(){clr();let span=3,lives=2,bestOk=0;
+    function round(){
+      const seq=[...Array(span)].map(()=>rnd(0,9));let typed='';
+      frame('digits','<div class="brshow" id="br-show"></div><div class="brtyped" id="br-typed"></div>'+keypad());
+      stat(FE('Pituus ','Length ')+'<b>'+span+'</b> · '+'<span class="lives">'+'♥'.repeat(lives)+'<i>'+'♥'.repeat(2-lives)+'</i></span>');
+      const S_=$('#br-show'),TY=$('#br-typed'),keys=$('#br-play .brkeys');keys.classList.add('off');let input=false;
+      seq.forEach((d,i)=>{later(()=>{S_.textContent=d;S_.classList.add('on');},600+i*1000);later(()=>{S_.classList.remove('on');},600+i*1000+750);});
+      later(()=>{S_.textContent=FE('Sinun vuorosi','Your turn');S_.classList.add('q');keys.classList.remove('off');input=true;draw();},600+span*1000);
+      function draw(){TY.innerHTML=[...Array(span)].map((_,i)=>'<i>'+(typed[i]??'')+'</i>').join('');}
+      KH=k=>{if(!input)return;if(k==='B'){typed=typed.slice(0,-1);draw();return;}if(!/^\d$/.test(k))return;typed+=k;draw();
+        if(typed.length===span){input=false;
+          if(typed===seq.join('')){bestOk=span;TY.classList.add('ok');Sound.play('good');span++;later(round,800);}
+          else{TY.classList.add('bad');Sound.play('bad');lives--;S_.classList.remove('q');S_.textContent=FE('Oikein: ','Answer: ')+seq.join(' ');
+            later(()=>{if(lives<=0)over('digits',bestOk,bestOk?FE('Pisin oikein muistettu sarja.','Your longest correct sequence.'):'');else round();},1800);}}
+      };
+      H=e=>{const b=e.target.closest('[data-k]');if(b)KH(b.dataset.k);};
+    }
+    round();
+  }
+
+  /* 4. Päässälasku 60 s */
+  function math(){clr();let ok=0,left=60,typed='',q=null;
+    frame('math','<div class="brq" id="br-q"></div><div class="brtyped one" id="br-typed"></div>'+keypad('<button data-k="S">'+FE('Ohita','Skip')+'</button>'));
+    const st=()=>stat(FE('Oikein ','Correct ')+'<b>'+ok+'</b> · <b class="'+(left<=10?'hot':'')+'">'+left+' s</b>');
+    function next(){const d=ok;let a,b,op;
+      const kind=d<4?rnd(0,1):d<9?rnd(0,2):rnd(0,3);
+      if(kind===0){a=rnd(2,9+d*4);b=rnd(2,9+d*4);op='+';q=[a,b,a+b];}
+      else if(kind===1){a=rnd(5,12+d*4);b=rnd(1,a-1);op='−';q=[a,b,a-b];}
+      else if(kind===2){a=rnd(2,Math.min(12,4+Math.floor(d/2)));b=rnd(2,Math.min(12,5+Math.floor(d/2)));op='×';q=[a,b,a*b];}
+      else{b=rnd(2,Math.min(12,3+Math.floor(d/3)));const r=rnd(2,12);a=b*r;op='÷';q=[a,b,r];}
+      $('#br-q').textContent=q[0]+' '+op+' '+q[1]+' = ?';typed='';$('#br-typed').textContent='';$('#br-typed').className='brtyped one';}
+    KH=k=>{if(left<=0)return;const T=$('#br-typed');
+      if(k==='S'){Sound.play('bad');next();return;}
+      if(k==='B'){typed=typed.slice(0,-1);T.textContent=typed;return;}
+      if(!/^\d$/.test(k)||typed.length>=5)return;typed+=k;T.textContent=typed;
+      const ans=String(q[2]);
+      if(typed===ans){ok++;st();T.classList.add('ok');Sound.play('move');later(next,180);}
+      else if(typed.length>=ans.length||!ans.startsWith(typed)){T.classList.add('bad');Sound.play('bad');later(()=>{typed='';T.textContent='';T.className='brtyped one';},350);}
+    };
+    H=e=>{const b=e.target.closest('[data-k]');if(b)KH(b.dataset.k);};
+    next();st();
+    every(()=>{left--;st();if(left<=0)over('math',ok);},1000);
+  }
+
+  /* 5. Värisekoitus (Stroop) 30 s */
+  function stroop(){clr();let ok=0,bad=0,left=30,ink=0;
+    const C=[['PUNAINEN','RED','#F25C54'],['SININEN','BLUE','#4D9DE0'],['VIHREÄ','GREEN','#7BC950'],['KELTAINEN','YELLOW','#F5C93D']];
+    frame('stroop','<div class="brword" id="br-word"></div><p class="brhint">'+FE('Napauta sanan VÄRIÄ','Tap the word’s COLOUR')+'</p><div class="brcols">'+C.map((c,i)=>'<button data-c="'+i+'" style="--c:'+c[2]+'"><i></i>'+FE(c[0],c[1]).toLowerCase()+'</button>').join('')+'</div>');
+    const st=()=>stat(FE('Pisteet ','Score ')+'<b>'+Math.max(0,ok-bad)+'</b> · <b class="'+(left<=5?'hot':'')+'">'+left+' s</b>');
+    function next(){const w=rnd(0,3);ink=Math.random()<.25?w:(w+rnd(1,3))%4;const W=$('#br-word');W.textContent=FE(C[w][0],C[w][1]);W.style.color=C[ink][2];W.classList.remove('pop');void W.offsetWidth;W.classList.add('pop');}
+    H=e=>{const b=e.target.closest('[data-c]');if(!b||left<=0)return;if(+b.dataset.c===ink){ok++;Sound.play('move');}else{bad++;Sound.play('bad');b.classList.add('bad');later(()=>b.classList.remove('bad'),300);}st();next();};
+    KH=k=>{const i='1234'.indexOf(k);if(i>=0){const b=document.querySelector('#br-play [data-c="'+i+'"]');if(b)b.click();}};
+    next();st();
+    every(()=>{left--;st();if(left<=0)over('stroop',Math.max(0,ok-bad),FE(ok+' oikein, '+bad+' väärin',ok+' right, '+bad+' wrong'));},1000);
+  }
+
+  const START={pairs,squares,digits,math,stroop};
+  el().addEventListener('click',e=>{
+    if(e.target.closest('[data-brmenu]')){menu();return;}
+    const g=e.target.closest('[data-brain]');if(g&&START[g.dataset.brain]){START[g.dataset.brain]();return;}
+    if(H)H(e);
+  });
+  document.addEventListener('keydown',e=>{if($('#brainview').hidden||!KH)return;const k=e.key==='Backspace'?'B':e.key;if(/^[\dB]$/.test(k)){e.preventDefault();KH(k);}});
+  function open(v){$('#brainview').hidden=!v;if(v){openSheet(false);menu();$('#brainview').scrollTop=0;}else clr();}
+  $('#btn-brain-close').addEventListener('click',()=>open(false));
+  return {open};
+})();
+
 /* Puhelimen näkymät: koti (korttivalikko) ja peli (lauta + toimintopalkki) */
 const MODE_TITLES={play:'Pelaa tietokonetta vastaan',train:'Avausharjoittelu',puzzle:'Pulmat',endgame:'Loppupelit',free:'Vapaa analyysi',learn:'Opi shakkia'};
 function setInfo(v){document.body.classList.toggle('m-info',!!v);}
@@ -4819,6 +5009,7 @@ function go(target){
   if(target==='stats'){openSheet(false);openStats(true);return;}
   if(target==='import'){openSheet(false);openImport(true);return;}
   if(target==='settings'){openSettings(true);return;}
+  if(target==='brain'){openStats(false);Brain.open(true);return;}
   openStats(false);
   if(target==='home'){goScreen('home');return;}
   if(target==='review'){$('#sel-theme').value='review';setMode('puzzle');goScreen('game');return;}
@@ -4859,6 +5050,7 @@ function renderHome(){
     </div>
     ${card('import','r','Analysoi oma peli',PST.imports.length?t('Tuodut pelit: {0} · liitä chess.com-peli',PST.imports.length):t('Liitä chess.com-peli ja käy se läpi siirto siirrolta'))}
     ${card('quiz','n','Avausvisa',t('Tunnistatko avaukset? Ennätys {0}/10',PST.quizBest||0))}
+    ${card('brain','q','Aivotreeni',t('Muisti- ja keskittymispelejä · ei shakkia'))}
     ${card('stats','k','Kehitys ja valmentaja',t('Kehityskäyrät, toistuvat virheet ja harjoitusehdotukset'))}
     ${card('free','b','Vapaa analyysi',t('Tutki avauksia ja asemia vapaasti'))}
     ${card('settings','k','Asetukset',t('Laudan värit, kieli, äänet ja apuvälineet'))}
