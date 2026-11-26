@@ -1855,9 +1855,21 @@ const Sound=(function(){
   try{on=localStorage.getItem('av-sound')!=='0';}catch(_){}
   function ac(){
     if(!on)return null;
-    try{if(!ctx){const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;ctx=new C();}if(ctx.state==='suspended')ctx.resume();}catch(_){return null;}
+    try{if(!ctx||ctx.state==='closed'){const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;ctx=new C();}if(ctx.state!=='running')ctx.resume().catch(()=>{});}catch(_){return null;}
     return ctx;
   }
+  /* iPhone: Web Audio on mykistetty, kunnes käyttäjä koskettaa sivua. Avataan ääni jokaisella kosketuksella
+     (myös taustalta palatessa tai puhelun jälkeen, jolloin iOS keskeyttää äänen), ja merkitään istunto
+     toistoksi, jotta äänet kuuluvat myös äänettömällä. */
+  try{if(navigator.audioSession)navigator.audioSession.type='playback';}catch(_){}
+  let tag=null;
+  function unlock(){
+    if(!on)return;const c=ac();if(!c)return;
+    try{const s=c.createBufferSource();s.buffer=c.createBuffer(1,1,22050);s.connect(c.destination);s.start(0);}catch(_){}
+    // Vanhemmat iOS-versiot: hiljainen <audio>-toisto vaihtaa äänen mediakanavalle, jota äänetön tila ei mykistä
+    if(!tag&&!navigator.audioSession){try{tag=new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAABErAAABAAgAZGF0YQAAAAA=');tag.setAttribute('playsinline','');tag.play().catch(()=>{});}catch(_){}}
+  }
+  ['touchstart','touchend','pointerdown','click','keydown'].forEach(ev=>document.addEventListener(ev,unlock,{capture:true,passive:true}));
   // Kevyt kompressori pitää lyönnit ja peräkkäiset äänet tasaisina eikä anna niiden särähtää
   function master(c){
     let m=masters.get(c);if(m)return m;
