@@ -302,7 +302,10 @@ details[open] summary::after{content:"\2212"}
 .result.fail{background:var(--warn-soft)}.result.fail .chip{background:var(--accent);color:var(--bg)}
 .actions{display:flex;flex-wrap:wrap;gap:8px}
 /* Puhelinversio: alapalkki, asetuspaneeli ja reunasta reunaan ulottuva lauta */
-button,select,.board{touch-action:manipulation}
+button,select{touch-action:manipulation}
+/* Laudalla sormi siirtää nappuloita eikä vieritä tai zoomaa sivua */
+.board,.board *,.arrows,#arrows{touch-action:none!important}
+html,body{overscroll-behavior:none}
 .bottomnav,.actbar,#btn-settings,.sheet-scrim,.sheet-head,.sheet-actions,.home,.mstrip,.cta,.panel-head,.mback,.mtitle{display:none}
 @media (max-width:700px){
   body{padding-bottom:calc(66px + env(safe-area-inset-bottom, 0px))}
@@ -3715,6 +3718,12 @@ function cloudSave(){
 /* Tapahtumat                                                          */
 /* ------------------------------------------------------------------ */
 boardEl.addEventListener('contextmenu',e=>e.preventDefault());
+/* iPhone: estetään sivun vieritys, kun kosketus alkaa laudalta (myös nappulaa raahatessa laudan ulkopuolelle) */
+let boardTouch=false;
+boardEl.addEventListener('touchstart',e=>{boardTouch=true;if(e.touches.length===1)e.preventDefault();},{passive:false});
+document.addEventListener('touchmove',e=>{if(boardTouch||S.drag)e.preventDefault();},{passive:false});
+document.addEventListener('touchend',()=>{boardTouch=false;},{passive:true});
+document.addEventListener('touchcancel',()=>{boardTouch=false;},{passive:true});
 boardEl.addEventListener('pointerdown',e=>{
   if(S.promo)return;
   if(e.button===2||(S.drawMode&&e.button===0)){
