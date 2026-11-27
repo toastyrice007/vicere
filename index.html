@@ -572,13 +572,17 @@ body.no-last .sq.last:not(.sel)::before{display:none}
 .moves .mvc:hover{background:#3A3835}
 .moves .mvc.cur{background:#4B4847;outline:1px solid #6B6865}
 .ann{font-weight:800;margin-left:2px}
-.a-bl{color:#FA6B5B}.a-mi{color:#FFA459}.a-in{color:#F7C631}.a-be{color:#95C566}.a-bk{color:#C2A37E}
+.a-br{color:#26C2A3}.a-gr{color:#8DB1D4}.a-bl{color:#FA6B5B}.a-mi{color:#FFA459}.a-in{color:#F7C631}.a-be{color:#95C566}.a-bk{color:#C2A37E}
 .viewnote{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;border-radius:8px;background:var(--hint-soft);font-size:14.5px}
 /* Kello */
 .clock.low{background:#F27466!important;color:#2A1210!important}
 .clock .t{font-variant-numeric:tabular-nums;font-size:17px;font-weight:800}
 /* Analyysi */
 .acc{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.qtab{width:100%;border-collapse:collapse;font-size:14.5px}.qtab th{font-size:12.5px;color:var(--muted);font-weight:700;text-align:right;padding:2px 8px}
+.qtab td{padding:5px 8px;border-top:1px solid var(--line)}.qtab td:not(:first-child){text-align:right;font-weight:800;width:72px}.qtab td i{font-style:normal;color:var(--muted);font-weight:600}
+.qtab td:first-child{display:flex;align-items:center;gap:8px;font-weight:700}.qtab .qi{width:20px;height:20px;flex:none}.qtab .qi svg{width:100%;height:100%;display:block}
+.pvl{color:var(--muted);font-size:12.5px}
 .acc .stat .v{font-size:28px}
 .acc .cnts{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:13.5px;font-weight:700;margin-top:4px}
 .graph{width:100%;height:auto;display:block;border-radius:6px;cursor:pointer;background:#21201D}
@@ -1067,7 +1071,7 @@ Object.assign(EN,{
   'Mokia {0}, virheitä {1} ja epätarkkuuksia {2}.':'Blunders {0}, mistakes {1} and inaccuracies {2}.',
   'Käydään peli läpi siirto kerrallaan. Jokaisen siirron kohdalla näet arvion ja selityksen. Virheissä vihreä nuoli näyttää paremman siirron, ja voit yrittää löytää sen itse.':'Let’s go through the game one move at a time. For each move you see an evaluation and an explanation. At mistakes, the green arrow shows a better move, and you can try to find it yourself.',
   'Aloita ▶':'Start ▶','Ensimmäiseen virheeseesi':'To your first mistake','Ensimmäiseen virheeseen':'To the first mistake','Seuraava virheesi':'Your next mistake','Seuraava virhe':'Next mistake',
-  'Kirjasiirto':'Book move','Paras siirto':'Best move','Hyvä siirto':'Good move','Ainoa siirto':'Only move','Epätarkkuus':'Inaccuracy','Virhe':'Mistake','Moka':'Blunder',
+  'Kirjasiirto':'Book move','Nerokas siirto':'Brilliant','Loistava siirto':'Great move','Erinomainen siirto':'Excellent','Huti':'Miss','Paras siirto':'Best move','Hyvä siirto':'Good move','Ainoa siirto':'Only move','Epätarkkuus':'Inaccuracy','Virhe':'Mistake','Moka':'Blunder',
   'Vihreä nuoli: parempi siirto. Punainen nuoli: vastustajan paras vastaus.':'Green arrow: better move. Red arrow: the opponent’s best reply.','Vihreä nuoli: parempi siirto.':'Green arrow: better move.',
   '◀ Edellinen':'◀ Back','Seuraava ▶':'Next ▶','Kokeile itse':'Try it yourself','Jatka katsausta ▶':'Continue review ▶','Näytä vastaus':'Show answer','Takaisin':'Back',
   'Pelissä siirrettiin {0}. Etsi parempi siirto ja pelaa se laudalla.':'In the game, {0} was played. Find a better move and play it on the board.',
@@ -1566,17 +1570,19 @@ const SF=(function(){
     if(l==='readyok'){if(state==='loading'){state='ready';onState();}next();return;}
     if(!cur)return;
     if(l.startsWith('info')&&l.includes(' score ')){
-      const m=l.match(/ depth (\d+)[\s\S]* score (cp|mate) (-?\d+)/);
-      if(m&&!/ multipv [2-9]/.test(l)){cur.depth=+m[1];const v=+m[3];cur.score=m[2]==='cp'?v:(v>0?1:-1)*(Engine.MATE-Math.abs(v)*2);}
+      const m=l.match(/ depth (\d+)[\s\S]* score (cp|mate) (-?\d+)/);if(!m)return;
+      const mp=+((l.match(/ multipv (\d+)/)||[])[1]||1);const v=+m[3];const sc=m[2]==='cp'?v:(v>0?1:-1)*(Engine.MATE-Math.abs(v)*2);
+      const pv=(l.match(/ pv (.+)$/)||[])[1];cur.lines[mp]={score:sc,pv:pv?pv.trim().split(' '):null};
+      if(mp===1){cur.depth=+m[1];cur.score=sc;}
     }else if(l.startsWith('bestmove')){
       const mv=l.split(' ')[1];const c=cur;cur=null;
       if(!mv||mv==='(none)')c.res(null);
-      else c.res({from:mv.slice(0,2),to:mv.slice(2,4),promotion:mv[4]||undefined,score:c.score,depth:c.depth,sf:true});
+      else c.res({from:mv.slice(0,2),to:mv.slice(2,4),promotion:mv[4]||undefined,score:c.score,depth:c.depth,sf:true,pv:(c.lines[1]&&c.lines[1].pv)||[mv],alt:c.lines[2]?c.lines[2].score:null});
       next();
     }
   }
-  function next(){if(state!=='ready'||cur||!queue.length)return;cur=queue.shift();cur.score=0;cur.depth=0;w.postMessage('position fen '+cur.fen);w.postMessage('go movetime '+Math.max(60,cur.ms|0));}
-  function think(fen,ms){return new Promise(res=>{if(state!=='ready'){res(null);return;}queue.push({fen,ms,res});next();});}
+  function next(){if(state!=='ready'||cur||!queue.length)return;cur=queue.shift();cur.score=0;cur.depth=0;cur.lines={};w.postMessage('setoption name MultiPV value '+(cur.mpv||1));w.postMessage('position fen '+cur.fen);w.postMessage('go movetime '+Math.max(60,cur.ms|0));}
+  function think(fen,ms,mpv){return new Promise(res=>{if(state!=='ready'){res(null);return;}queue.push({fen,ms,mpv,res});next();});}
   return {start,think,ready:()=>state==='ready',state:()=>state,onChange(f){onState=f;}};
 })();
 /* Taustasäie: haku ei jäädytä sivua. Jos Worker ei käynnisty, haku ajetaan pääsäikeessä. */
@@ -2418,11 +2424,11 @@ function passedPawns(Bd){
   }
   return out;
 }
-const ANN={'??':['??','a-bl'],'?':['?','a-mi'],'?!':['?!','a-in'],best:['★','a-be'],book:['K','a-bk']};
+const ANN={'??':['??','a-bl'],'?':['?','a-mi'],'?!':['?!','a-in'],best:['★','a-be'],book:['K','a-bk'],'!!':['!!','a-br'],'!':['!','a-gr'],miss:['✕','a-mi'],excellent:['','a-be'],good:['','a-be']};
 function annOf(i){
   const a=S.ana;if(!a||!a.done||a.sig!==S.g.history().join(' '))return '';
   const c=a.cls[i];if(!c||!c.k)return '';
-  if(c.k==='book')return '';
+  if(c.k==='book'||!ANN[c.k]||!ANN[c.k][0])return '';
   const [s,cl]=ANN[c.k];return `<span class="ann ${cl}">${c.k==='best'?'':s}</span>`;
 }
 function renderMoves(){
@@ -3183,54 +3189,117 @@ setInterval(()=>{
 /* ------------------------------------------------------------------ */
 const winPct=cp=>{const c=Math.max(-1500,Math.min(1500,cp));return 50+50*(2/(1+Math.exp(-0.00368208*c))-1);};
 const avg=a=>a.length?a.reduce((s,x)=>s+x,0)/a.length:0;
+/* Pelin analyysi. Stockfish (ladataan tarvittaessa) käy jokaisen aseman läpi kahdella parhaalla linjalla.
+   Toisella kierroksella virheiltä näyttävät siirrot tarkistetaan pidemmällä haulla, ettei lyhyen haun kohina tee vääriä mokia. */
+function isSac(g,m,c){
+  const hp=hangingPieces(boardOf(g)).filter(x=>x.p.color===c&&x.p.type!=='p');if(!hp.length)return null;
+  const top=hp.reduce((a,b)=>AV[b.p.type]>AV[a.p.type]?b:a);
+  return AV[top.p.type]>(m.captured?AV[m.captured]:0)+1?top:null;
+}
 async function analyseGame(){
   const h=S.g.history({verbose:true});if(h.length<2||(S.ana&&S.ana.running))return;
-  const gid=S.gameId;const ana={running:true,done:false,progress:0,total:h.length+1,evals:[],best:[],cls:[],sig:h.map(m=>m.san).join(' ')};
+  const N=h.length+1;
+  const ana={running:true,done:false,progress:0,total:N,evals:[],best:[],alt:[],cls:[],sig:h.map(m=>m.san).join(' '),stage:'',sf:false};
   S.ana=ana;showTab('ana');render();
-  const g=new Chess(S.startFen);
-  for(let i=0;i<=h.length;i++){
-    if(S.ana!==ana)return;
-    let ev=0,best=null;
+  if(!SF.ready()&&SF.state()!=='fail'){
+    ana.stage='load';renderAna();SF.start();const t0=Date.now();
+    while(!SF.ready()&&SF.state()!=='fail'&&Date.now()-t0<15000){await new Promise(r=>setTimeout(r,200));if(S.ana!==ana)return;}
+    ana.stage='';
+  }
+  ana.sf=SF.ready();
+  const T=ana.sf?Math.max(400,Math.min(900,Math.round(36000/N))):Math.max(450,Math.min(900,Math.round(30000/N)));ana.ms=T;
+  const fens=[];{const g=new Chess(S.startFen);fens.push(g.fen());for(const m of h){g.move(m.san);fens.push(g.fen());}}
+  const cl=s=>Math.abs(s)>Engine.MATE-500?Math.sign(s)*3000:s;
+  async function evalAt(i,ms){
+    const g=new Chess(fens[i]);let ev=0,best=null,alt=null;
     if(g.in_checkmate())ev=g.turn()==='w'?-3000:3000;
     else if(!g.game_over()){
-      const r=await EngineAsync.think(g.fen(),{depth:30,ms:330,noise:0});
-      if(S.ana!==ana)return;
+      const legal=g.moves({verbose:true});
+      let r=ana.sf?await SF.think(fens[i],ms,legal.length>1?2:1):null;
+      if(!r)r=await EngineAsync.think(fens[i],{depth:30,ms,noise:0,own:true});
       if(r){
-        const sc=Math.abs(r.score)>Engine.MATE-500?Math.sign(r.score)*3000:r.score;ev=g.turn()==='w'?sc:-sc;
-        const vm=g.moves({verbose:true}).find(x=>x.from===r.from&&x.to===r.to&&(!x.promotion||x.promotion==='q'));
-        if(vm)best={from:vm.from,to:vm.to,san:vm.san};
+        const sg=g.turn()==='w'?1:-1;ev=sg*cl(r.score);if(r.alt!=null)alt=sg*cl(r.alt);
+        const vm=legal.find(x=>x.from===r.from&&x.to===r.to&&(!x.promotion||x.promotion===(r.promotion||'q')));
+        if(vm){
+          best={from:vm.from,to:vm.to,san:vm.san,line:[vm.san]};
+          if(r.pv&&r.pv.length>1){const gl=new Chess(fens[i]);best.line=[];for(const u of r.pv.slice(0,8)){const mv=gl.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||'q'});if(!mv)break;best.line.push(mv.san);}if(!best.line.length||best.line[0]!==vm.san)best.line=[vm.san];}
+        }
       }
     }
-    ana.evals.push(ev);ana.best.push(best);ana.progress=i+1;
-    if(i<h.length)g.move(h[i].san);
-    if(S.tab==='ana')renderAna();
-    renderCoach();
+    return {ev,best,alt};
   }
-  const gg=new Chess(S.startFen);const acc={w:[],b:[]};
+  const put=(i,r)=>{ana.evals[i]=r.ev;ana.best[i]=r.best;ana.alt[i]=r.alt;};
+  for(let i=0;i<N;i++){
+    if(S.ana!==ana)return;
+    const r=await evalAt(i,T);if(S.ana!==ana)return;put(i,r);
+    ana.progress=i+1;if(S.tab==='ana')renderAna();renderCoach();
+  }
+  const lossOf=i=>{const sg=h[i].color==='w'?1:-1;return Math.max(0,winPct(sg*ana.evals[i])-winPct(sg*ana.evals[i+1]));};
+  // Tarkistuskierros: virheiltä näyttävät siirrot ja mahdolliset uhraukset uudelleen pidemmällä haulla
+  const re=new Set();
+  {const g=new Chess(S.startFen);
+   for(let i=0;i<h.length;i++){g.move(h[i].san);const L=lossOf(i);if(L>=7||(L<=3&&isSac(g,h[i],h[i].color))){re.add(i);re.add(i+1);}}}
+  const reList=[...re].sort((a,b)=>a-b).slice(0,20);
+  if(reList.length){
+    ana.stage='refine';ana.total=N+reList.length;
+    const T2=Math.max(1200,T*2);
+    for(const i of reList){
+      if(S.ana!==ana)return;
+      const r=await evalAt(i,T2);if(S.ana!==ana)return;put(i,r);
+      ana.progress++;if(S.tab==='ana')renderAna();
+    }
+    ana.stage='';
+  }
+  const gg=new Chess(S.startFen);
   const firstTime=!PST.games.some(x=>x.t===S.gameStamp&&x.acc!=null);
-  const cnt={w:{'??':0,'?':0,'?!':0,best:0},b:{'??':0,'?':0,'?!':0,best:0}};
+  const KS=['!!','!','best','excellent','good','book','?!','?','miss','??'];
+  const cnt={w:{},b:{}};for(const c of 'wb')for(const k of KS)cnt[c][k]=0;
+  const per={w:[],b:[]},cpl={w:[],b:[]},ph={w:{o:[],m:[],e:[]},b:{o:[],m:[],e:[]}};
+  const WP=ana.evals.map(e=>winPct(e));const ws=Math.max(2,Math.min(8,Math.floor(h.length/10)));
+  const sd=a=>{const m=avg(a);return Math.sqrt(avg(a.map(x=>(x-m)*(x-m))));};
+  const cpc=x=>Math.max(-1000,Math.min(1000,x));
   for(let i=0;i<h.length;i++){
-    const m=h[i],c=m.color;const sgn=c==='w'?1:-1;
-    const loss=Math.max(0,winPct(sgn*ana.evals[i])-winPct(sgn*ana.evals[i+1]));
-    gg.move(m.san);const book=S.startFen===START_FEN&&BOOK.has(posKey(gg));
-    let k='';
+    const m=h[i],c=m.color,sg=c==='w'?1:-1;
+    const L=lossOf(i);const wb=winPct(sg*ana.evals[i]),wa=winPct(sg*ana.evals[i+1]);
+    // Pelivaihe ennen siirtoa: upseerien määrä laudalla
+    const mat=[...fens[i].split(' ')[0]].reduce((s,ch)=>s+({n:3,b:3,r:5,q:9}[ch.toLowerCase()]||0),0);
+    const phase=mat<=26?'e':(i<20&&mat>=50)?'o':'m';
+    gg.move(m.san);
+    const book=S.startFen===START_FEN&&BOOK.has(posKey(gg));
+    const best=ana.best[i];const isBest=!!(best&&best.san===m.san);
+    const altW=ana.alt[i]!=null?winPct(sg*ana.alt[i]):null;
+    let k;
     if(book)k='book';
-    else if(ana.best[i]&&ana.best[i].san===m.san)k='best';
-    else if(loss>=20)k='??';else if(loss>=10)k='?';else if(loss>=5)k='?!';
-    ana.cls.push({k,loss});
-    acc[c].push(Math.max(0,Math.min(100,103.1668*Math.exp(-0.04354*loss)-3.1669)));
-    if(cnt[c][k]!=null)cnt[c][k]++;
-    // Valmentaja: luokitellaan omat virheet (vain pelissä konetta vastaan)
+    else if(L<=2&&wa>=35&&wb<97&&isSac(gg,m,c))k='!!';
+    else if((isBest||L<=1)&&altW!=null&&wb-altW>=15&&wb>15&&wb<95)k='!';
+    else if(isBest)k='best';
+    else if(L<2)k='excellent';
+    else if(L<5)k='good';
+    else if(L>=10&&i>0&&wb>=60&&lossOf(i-1)>=10&&!(ana.cls[i-1]&&ana.cls[i-1].k==='book'))k='miss';
+    else k=L>=20?'??':L>=10?'?':'?!';
+    ana.cls.push({k,loss:L});cnt[c][k]++;
+    const a1=Math.max(0,Math.min(100,103.1668*Math.exp(-0.04354*L)-3.1669));
+    const lo=Math.max(0,Math.min(i-ws+2,WP.length-ws));const w=Math.max(.5,Math.min(12,sd(WP.slice(lo,lo+ws))));
+    per[c].push([a1,w]);ph[c][phase].push(a1);
+    cpl[c].push(Math.max(0,cpc(sg*ana.evals[i])-cpc(sg*ana.evals[i+1])));
+    // Valmentaja: luokitellaan omat virheet (vain pelissä konetta vastaan tai omassa tuodussa pelissä)
     const imp=S.imported;
-    if(((firstTime&&S.mode==='play'&&c===S.human)||(imp&&!imp.counted&&c===imp.me))&&(k==='??'||k==='?')){
+    if(((firstTime&&S.mode==='play'&&c===S.human)||(imp&&!imp.counted&&c===imp.me))&&(k==='??'||k==='?'||k==='miss')){
       const reply=ana.best[i+1];let type='other';
-      if(sgn*ana.evals[i+1]<=-3000)type='mate';
+      if(sg*ana.evals[i+1]<=-3000)type='mate';
       else if(reply&&reply.san.includes('x')&&hangingPieces(boardOf(gg)).some(hp=>hp.p.color===c&&hp.sq===reply.to&&hp.p.type!=='p'))type='hang';
-      else if(ana.best[i]&&/[x+#]/.test(ana.best[i].san))type='missed';
+      else if(best&&/[x+#]/.test(best.san))type='missed';
       PST.mist[type]=(PST.mist[type]||0)+1;
     }
   }
-  ana.acc={w:Math.round(avg(acc.w)),b:Math.round(avg(acc.b))};ana.cnt=cnt;ana.running=false;ana.done=true;
+  // Tarkkuus kuten Lichessissä: painotettu keskiarvo (rauhallisissa asemissa pienempi paino) ja harmoninen keskiarvo
+  const gameAcc=L=>{if(!L.length)return 0;const sw=L.reduce((s,x)=>s+x[1],0);const wm=L.reduce((s,x)=>s+x[0]*x[1],0)/sw;const hm=L.length/L.reduce((s,x)=>s+1/Math.max(x[0],.5),0);return (wm+hm)/2;};
+  ana.acc={w:Math.round(gameAcc(per.w)),b:Math.round(gameAcc(per.b))};
+  // Pelitaso: arvio keskimääräisestä sotilasyksikkömenetyksestä (vähintään 8 omaa siirtoa)
+  const rt=c=>cpl[c].length<8?null:Math.max(100,Math.min(3000,Math.round(3100*Math.exp(-0.01*avg(cpl[c]))/50)*50));
+  ana.rating={w:rt('w'),b:rt('b')};
+  ana.phase={w:{},b:{}};for(const c of 'wb')for(const p of 'ome')ana.phase[c][p]=ph[c][p].length?Math.round(avg(ph[c][p])):null;
+  ana.cnt=cnt;ana.running=false;ana.done=true;
   if(S.mode==='play')recordGame(null,ana.acc[S.human]);
   if(S.imported){S.imported.acc=ana.acc[S.imported.me];if(!S.imported.counted){S.imported.counted=true;}savePST();}
   Sound.play('good');startReview(0);
@@ -3240,7 +3309,7 @@ function evalGraph(a,len){
   const xy=a.evals.map((e,i)=>[i/n*W,H-winPct(e)/100*H]);
   let area=`M0 ${H} `+xy.map(p=>`L${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' ')+` L${W} ${H} Z`;
   let marks='';
-  a.cls.forEach((c,i)=>{if(['??','?'].includes(c.k)){const p=xy[i+1];marks+=`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="4.5" fill="${c.k==='??'?'#FA412D':'#FFA459'}" stroke="#21201D" stroke-width="1.5"/>`;}});
+  a.cls.forEach((c,i)=>{if(['??','?','miss','!!'].includes(c.k)){const p=xy[i+1];marks+=`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="4.5" fill="${REVC[c.k].c}" stroke="#21201D" stroke-width="1.5"/>`;}});
   const v=S.view==null?len:S.view;const vx=(v/n*W).toFixed(1);
   return `<svg class="graph" id="ana-graph" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="Arviokäyrä: valkean etu ylhäällä, mustan alhaalla"><rect width="${W}" height="${H}" fill="#21201D"/><path d="${area}" fill="#E8E6E2"/><line x1="0" y1="${H/2}" x2="${W}" y2="${H/2}" stroke="#8B8987" stroke-width="1" stroke-dasharray="4 4"/><line x1="${vx}" y1="0" x2="${vx}" y2="${H}" stroke="#81B64C" stroke-width="2"/>${marks}</svg>`;
 }
@@ -3248,12 +3317,13 @@ function renderAna(){
   const el=$('#tab-ana');if(!el)return;
   const h=S.g.history();const a=S.ana;
   if(!a){
-    el.innerHTML=`<h3 class="sec">${FE('Pelin analyysi','Game analysis')}</h3><p class="op-desc" style="font-size:16px">${FE('Moottori käy läpi jokaisen siirron ja merkitsee mokat (??), virheet (?) ja epätarkkuudet (?!). Näet arviokäyrän, kummankin pelaajan tarkkuuden ja hetket, joissa peli kääntyi.','The engine goes through every move and marks blunders (??), mistakes (?) and inaccuracies (?!). You see the evaluation graph, both players’ accuracy and the moments where the game turned.')}</p><div class="actions"><button class="btn primary" data-act="analyse"${h.length<2?' disabled':''}>${FE('Analysoi peli','Analyse game')}</button><button class="btn" data-act="import">${t('Tuo oma peli (PGN)')}</button></div><p class="legend">${h.length<2?FE('Pelaa ensin muutama siirto.','Play a few moves first.'):FE(`Analyysi kestää noin ${Math.ceil((h.length+1)*0.36)} sekuntia.`,`The analysis takes about ${Math.ceil((h.length+1)*0.36)} seconds.`)}</p>`;
+    el.innerHTML=`<h3 class="sec">${FE('Pelin analyysi','Game analysis')}</h3><p class="op-desc" style="font-size:16px">${FE('Moottori käy läpi jokaisen siirron ja merkitsee mokat (??), virheet (?) ja epätarkkuudet (?!). Näet arviokäyrän, kummankin pelaajan tarkkuuden ja hetket, joissa peli kääntyi.','The engine goes through every move and marks blunders (??), mistakes (?) and inaccuracies (?!). You see the evaluation graph, both players’ accuracy and the moments where the game turned.')}</p><div class="actions"><button class="btn primary" data-act="analyse"${h.length<2?' disabled':''}>${FE('Analysoi peli','Analyse game')}</button><button class="btn" data-act="import">${t('Tuo oma peli (PGN)')}</button></div><p class="legend">${h.length<2?FE('Pelaa ensin muutama siirto.','Play a few moves first.'):(()=>{const n=h.length+1,s=Math.ceil(n*Math.max(400,Math.min(900,36000/n))/1000)+8;return FE(`Tarkka analyysi Stockfishilla kestää noin ${s} sekuntia.`,`The full Stockfish analysis takes about ${s} seconds.`);})()}</p>`;
     return;
   }
   if(a.running){
     const pct=Math.round(a.progress/a.total*100);
-    el.innerHTML=`<h3 class="sec">${FE('Analysoidaan…','Analysing…')}</h3><div class="pbar2"><span style="width:${pct}%"></span></div><p class="legend">${FE(`Asema ${a.progress} / ${a.total}. Voit jatkaa sivun käyttöä analyysin aikana.`,`Position ${a.progress} / ${a.total}. You can keep using the page during the analysis.`)}</p>`;
+    if(a.stage==='load'){el.innerHTML=`<h3 class="sec">${FE('Ladataan Stockfishia…','Loading Stockfish…')}</h3><p class="legend">${FE('Shakkimoottori ladataan kerran (noin 1 Mt). Sen jälkeen analyysi alkaa.','The chess engine is downloaded once (about 1 MB). The analysis starts right after.')}</p>`;return;}
+    el.innerHTML=`<h3 class="sec">${a.stage==='refine'?FE('Tarkistetaan virheet tarkemmin…','Double-checking mistakes…'):FE('Analysoidaan…','Analysing…')}</h3><div class="pbar2"><span style="width:${pct}%"></span></div><p class="legend">${FE(`Asema ${a.progress} / ${a.total}. Voit jatkaa sivun käyttöä analyysin aikana.`,`Position ${a.progress} / ${a.total}. You can keep using the page during the analysis.`)}</p>`;
     return;
   }
   if(a.sig!==h.join(' ')){
@@ -3261,26 +3331,33 @@ function renderAna(){
   }
   const nm=c=>{const n=playerName(c)[0];const col=colorNom(c);return n===col?col:`${n} · ${col.toLowerCase()}`;};
   const fmtEv=e=>fmtEvW(e);
-  const card=c=>`<div class="stat"><span class="k">${esc(nm(c))}</span><span class="v">${a.acc[c]} %</span><span class="cnts"><span class="a-bl">${a.cnt[c]['??']} ??</span><span class="a-mi">${a.cnt[c]['?']} ?</span><span class="a-in">${a.cnt[c]['?!']} ?!</span><span class="a-be">${a.cnt[c].best} ${FE('parasta','best')}</span></span></div>`;
+  const QROWS=[['!!','Nerokas siirto'],['!','Loistava siirto'],['best','Paras siirto'],['excellent','Erinomainen siirto'],['good','Hyvä siirto'],['book','Kirjasiirto'],['?!','Epätarkkuus'],['?','Virhe'],['miss','Huti'],['??','Moka']];
+  const card=c=>`<div class="stat"><span class="k">${esc(nm(c))}</span><span class="v">${a.acc[c]} %</span><span class="cnts">${a.rating&&a.rating[c]?FE('Pelitaso noin ','Played like ')+'<b>'+a.rating[c]+'</b>':''}</span></div>`;
+  const qtab=`<table class="qtab"><thead><tr><th></th><th>${esc(colorNom('w'))}</th><th>${esc(colorNom('b'))}</th></tr></thead><tbody>${QROWS.map(([k,n])=>`<tr><td><span class="qi">${clsIcon(k)}</span><span style="color:${REVC[k].c}">${t(n)}</span></td><td>${a.cnt.w[k]||'<i>0</i>'}</td><td>${a.cnt.b[k]||'<i>0</i>'}</td></tr>`).join('')}</tbody></table>`;
+  const pv=v=>v==null?'<i>–</i>':v+' %';
+  const ptab=a.phase?`<table class="qtab"><thead><tr><th></th><th>${esc(colorNom('w'))}</th><th>${esc(colorNom('b'))}</th></tr></thead><tbody>${[['o','Avaus','Opening'],['m','Keskipeli','Middlegame'],['e','Loppupeli','Endgame']].map(([p,f,e])=>`<tr><td>${FE(f,e)}</td><td>${pv(a.phase.w[p])}</td><td>${pv(a.phase.b[p])}</td></tr>`).join('')}</tbody></table>`:'';
   let mom='';const hv=S.g.history({verbose:true});
   const base=S.startFen!==START_FEN?(+S.startFen.split(' ')[5]-1)*2+(S.startFen.split(' ')[1]==='b'?1:0):0;
   a.cls.forEach((c,i)=>{
-    if(!['??','?'].includes(c.k))return;const b=a.best[i];
-    mom+=`<li><button data-view="${i+1}"><span class="ann ${ANN[c.k][1]}" style="min-width:2em">${c.k}</span><span><span class="mv">${esc(moveLabel(hv[i].san,base+i))}</span>${b?` – ${FE('parempi oli','better was')} <span class="mv">${esc(fi(b.san))}</span>`:''}. ${t('Arvio')} ${fmtEv(a.evals[i])} → ${fmtEv(a.evals[i+1])}</span></button></li>`;
+    if(!['??','?','miss','!!'].includes(c.k))return;const b=a.best[i];const A=ANN[c.k];
+    const better=c.k!=='!!'&&b?` – ${FE('parempi oli','better was')} <span class="mv">${esc(fi(b.san))}</span>${b.line&&b.line.length>1?` <small class="pvl">(${esc(b.line.slice(0,5).map(fi).join(' '))}…)</small>`:''}`:c.k==='!!'?' – '+t('Nerokas siirto').toLowerCase():'';
+    mom+=`<li><button data-view="${i+1}"><span class="ann ${A[1]}" style="min-width:2em">${A[0]}</span><span><span class="mv">${esc(moveLabel(hv[i].san,base+i))}</span>${better}. ${t('Arvio')} ${fmtEv(a.evals[i])} → ${fmtEv(a.evals[i+1])}</span></button></li>`;
   });
-  el.innerHTML=`<div class="actions" style="margin-top:0"><button class="btn primary" data-act="review">${FE('Käy peli läpi siirto siirrolta','Review the game move by move')}</button></div><h3 class="sec">${FE('Tarkkuus','Accuracy')}</h3><div class="acc">${card('w')}${card('b')}</div><h3 class="sec">${FE('Arviokäyrä','Evaluation graph')}</h3>${evalGraph(a,h.length)}<p class="legend">${FE('Vaalea alue on valkean etua, tumma mustan. Klikkaa käyrää siirtyäksesi siihen kohtaan.','The light area is White’s advantage, the dark area Black’s. Click the graph to jump to that point.')}</p><h3 class="sec">${FE('Ratkaisevat hetket','Key moments')}</h3>${mom?`<ul class="moments">${mom}</ul><p class="legend">${FE('Klikkaa hetkeä: lauta näyttää aseman siirron jälkeen. Vihreä nuoli on parempi siirto ja punainen vastustajan paras vastaus.','Click a moment: the board shows the position after the move. The green arrow is the better move and the red one the opponent’s best reply.')}</p>`:`<p class="empty">${FE('Ei mokia eikä virheitä. Hienosti pelattu!','No blunders or mistakes. Well played!')}</p>`}`;
+  const src=a.sf?FE(`Analysoitu Stockfishilla, noin ${(a.ms/1000).toFixed(1).replace(".",",")} s asemaa kohden. Virheet on tarkistettu pidemmällä haulla.`,`Analysed with Stockfish, about ${(a.ms/1000).toFixed(1)} s per position. Mistakes were double-checked with a longer search.`):FE('Stockfish ei latautunut, joten analyysiin käytettiin sovelluksen omaa moottoria. Tulos on suuntaa antava.','Stockfish did not load, so the app’s own engine was used. Treat the result as a rough guide.');
+  el.innerHTML=`<div class="actions" style="margin-top:0"><button class="btn primary" data-act="review">${FE('Käy peli läpi siirto siirrolta','Review the game move by move')}</button></div><h3 class="sec">${FE('Tarkkuus','Accuracy')}</h3><div class="acc">${card('w')}${card('b')}</div><h3 class="sec">${FE('Siirtojen laatu','Move quality')}</h3>${qtab}${ptab?`<h3 class="sec">${FE('Tarkkuus pelin vaiheittain','Accuracy by game phase')}</h3>${ptab}`:''}<h3 class="sec">${FE('Arviokäyrä','Evaluation graph')}</h3>${evalGraph(a,h.length)}<p class="legend">${FE('Vaalea alue on valkean etua, tumma mustan. Klikkaa käyrää siirtyäksesi siihen kohtaan.','The light area is White’s advantage, the dark area Black’s. Click the graph to jump to that point.')}</p><h3 class="sec">${FE('Ratkaisevat hetket','Key moments')}</h3>${mom?`<ul class="moments">${mom}</ul><p class="legend">${FE('Klikkaa hetkeä: lauta näyttää aseman siirron jälkeen. Vihreä nuoli on parempi siirto ja punainen vastustajan paras vastaus. Suluissa on moottorin suosittelema jatko.','Click a moment: the board shows the position after the move. The green arrow is the better move and the red one the opponent’s best reply. In brackets is the engine’s suggested line.')}</p>`:`<p class="empty">${FE('Ei mokia eikä virheitä. Hienosti pelattu!','No blunders or mistakes. Well played!')}</p>`}<p class="legend">${src}</p>`;
 }
 /* ------------------------------------------------------------------ */
 /* Pelikatsaus: peli käydään läpi siirto kerrallaan selityksin          */
 /* ------------------------------------------------------------------ */
 const fmtEvW=e=>Math.abs(e)>=3000?(LANG==='en'?(e>0?'White mates':'Black mates'):(e>0?'valkea mattaa':'musta mattaa')):fmtScore(e,'w');
-const REVC={book:{n:'Kirjasiirto',c:'#A88865'},best:{n:'Paras siirto',c:'#81B64C'},good:{n:'Hyvä siirto',c:'#95B776'},forced:{n:'Ainoa siirto',c:'#8B8987'},'?!':{n:'Epätarkkuus',c:'#F7C631'},'?':{n:'Virhe',c:'#FFA459'},'??':{n:'Moka',c:'#FA412D'}};
-const MISTAKE_K=['??','?','?!'];
+const REVC={'!!':{n:'Nerokas siirto',c:'#26C2A3'},'!':{n:'Loistava siirto',c:'#749BBF'},excellent:{n:'Erinomainen siirto',c:'#96BC4B'},miss:{n:'Huti',c:'#FF7769'},book:{n:'Kirjasiirto',c:'#A88865'},best:{n:'Paras siirto',c:'#81B64C'},good:{n:'Hyvä siirto',c:'#95B776'},forced:{n:'Ainoa siirto',c:'#8B8987'},'?!':{n:'Epätarkkuus',c:'#F7C631'},'?':{n:'Virhe',c:'#FFA459'},'??':{n:'Moka',c:'#FA412D'}};
+const MISTAKE_K=['??','?','?!','miss'];
 function clsIcon(k){
   const c=REVC[k].c;let inner;
   if(k==='book')inner='<path d="M4.8 6.2h3.8c.9 0 1.4.5 1.4 1.3v7c-.3-.5-.8-.8-1.4-.8H4.8zM15.2 6.2h-3.8c-.9 0-1.4.5-1.4 1.3v7c.3-.5.8-.8 1.4-.8h3.8z" fill="#fff"/>';
   else if(k==='best')inner='<path d="M10 4.4l1.7 3.5 3.8.5-2.8 2.6.7 3.8L10 13l-3.4 1.8.7-3.8-2.8-2.6 3.8-.5z" fill="#fff"/>';
-  else if(k==='good'||k==='forced')inner='<path d="M5.9 10.3l2.7 2.7 5.5-5.6" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>';
+  else if(k==='miss')inner='<path d="M6.6 6.6l6.8 6.8M13.4 6.6l-6.8 6.8" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>';
+  else if(k==='good'||k==='forced'||k==='excellent')inner='<path d="M5.9 10.3l2.7 2.7 5.5-5.6" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>';
   else inner=`<text x="10" y="13.7" text-anchor="middle" font-family="Nunito Sans,system-ui,sans-serif" font-weight="900" font-size="${k.length>1?9.6:11.5}" fill="#fff">${k}</text>`;
   return `<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="9.4" fill="${c}"/>${inner}</svg>`;
 }
@@ -3304,7 +3381,7 @@ function revKey(i){
 function nextMistake(i){
   const a=S.ana,h=S.g.history({verbose:true});
   for(let j=i+1;j<a.cls.length;j++){
-    if(!['??','?'].includes(a.cls[j].k))continue;
+    if(!['??','?','miss'].includes(a.cls[j].k))continue;
     const me=revMe();if(me&&h[j].color!==me)continue;
     return j;
   }
@@ -3324,15 +3401,19 @@ function moveDesc(m,gA,ply){
 function revExplain(i){
   const a=S.ana,h=S.g.history({verbose:true}),m=h[i],c=m.color,sgn=c==='w'?1:-1;
   const fens=anaFens();const gB=new Chess(fens[i]),gA=new Chess(fens[i+1]);
-  const k=revKey(i);const lbl=s=>`<span class="mv">${esc(fi(s))}</span>`;
+  const k=revKey(i);const lbl=s=>`<span class="mv">${esc(fi(s))}</span>`;const lineLbl=L=>`<span class="mv">${esc(L.slice(0,6).map(fi).join(' '))}</span>`;
   const evB=sgn*a.evals[i],evA=sgn*a.evals[i+1];const best=a.best[i],reply=a.best[i+1];
   const d=moveDesc(m,gA,plyBase()+i);const parts=[];
   if(k==='book'){const n=BOOK.get(posKey(gA));parts.push(FE('Avausteoriaa: ','Opening theory: ')+esc(n?t(nameOf(n).name):FE('tunnettu linja','a known line'))+'.');if(d)parts.push(d);}
   else if(k==='forced')parts.push(FE('Ainoa laillinen siirto.','The only legal move.')+(d?' '+d:''));
   else if(k==='best'){if(d)parts.push(d);parts.push(FE('Moottorin mielestä tämä on aseman paras siirto.','The engine considers this the best move in the position.'));}
+  else if(k==='!!'){const sac=isSac(gA,m,c);if(d)parts.push(d);parts.push(sac?FE(`Nerokas siirto! Jätät ${GEN[sac.p.type]} ${PL[sac.p.type]}${sac.sq} lyötäväksi, mutta moottorin mukaan uhraus toimii.`,`Brilliant! You leave ${GEN[sac.p.type]} on ${sac.sq} en prise, but the engine says the sacrifice works.`):FE('Nerokas siirto!','Brilliant!'));if(best&&best.line&&best.line.length>1)parts.push(FE('Paras jatko: ','Best line: ')+lineLbl(best.line));}
+  else if(k==='!'){if(d)parts.push(d);parts.push(FE('Loistava siirto! Tämä oli ainoa siirto, joka piti aseman: muut siirrot olisivat heikentäneet sitä selvästi.','Great move! This was the only move that held the position: the alternatives were clearly worse.'));}
+  else if(k==='excellent'){if(d)parts.push(d);parts.push(best?FE(`Erinomainen siirto, lähes yhtä hyvä kuin moottorin ${lbl(best.san)}.`,`An excellent move, almost as good as the engine’s ${lbl(best.san)}.`):FE('Erinomainen siirto.','An excellent move.'));}
   else if(k==='good'){if(d)parts.push(d);parts.push(best?FE(`Hyvä siirto. Moottori olisi pelannut ${lbl(best.san)}, mutta ero on pieni.`,`A good move. The engine would have played ${lbl(best.san)}, but the difference is small.`):FE('Hyvä siirto.','A good move.'));}
   else{
     if(d)parts.push(d);
+    if(k==='miss')parts.push(FE('Huti! Vastustaja teki edellisellä siirrolla virheen, mutta tämä siirto ei hyödyntänyt sitä.','Miss! The opponent made a mistake on the previous move, but this move didn’t punish it.'));
     if(evA<=-3000&&reply)parts.push(FE(`Tämän jälkeen vastustajalla on pakotettu matti, alkaen ${lbl(reply.san)}.`,`After this the opponent has a forced mate, starting with ${lbl(reply.san)}.`));
     else if(reply&&k!=='?!'){
       const rm=gA.moves({verbose:true}).find(x=>x.san===reply.san);
@@ -3348,6 +3429,7 @@ function revExplain(i){
       else if(bm&&bm.captured)why=FE(`, joka lyö ${GEN[bm.captured]}`,`, which captures ${GEN[bm.captured]}`);
       else if(bm&&bm.san.includes('+'))why=FE(' (shakki)',' (check)');
       parts.push(FE('Parempi oli ','Better was ')+`${lbl(best.san)}${why}.`);
+      if(best.line&&best.line.length>2)parts.push(FE('Moottorin jatko: ','Engine line: ')+lineLbl(best.line)+'.');
     }
   }
   return parts.join(' ');
@@ -3383,7 +3465,7 @@ function renderReview(el){
   const who=me?(m.color===me?t('Sinä'):t(oppLabel())):colorNom(m.color);
   const evW=a.evals[i+1];const last=i===len-1;
   const canRetry=MISTAKE_K.includes(k)&&!!a.best[i]&&(!me||m.color===me);
-  const legend=t(['??','?'].includes(k)?'Vihreä nuoli: parempi siirto. Punainen nuoli: vastustajan paras vastaus.':k==='?!'?'Vihreä nuoli: parempi siirto.':'');
+  const legend=t(['??','?','miss'].includes(k)?'Vihreä nuoli: parempi siirto. Punainen nuoli: vastustajan paras vastaus.':k==='?!'?'Vihreä nuoli: parempi siirto.':'');
   el.innerHTML=`<div class="rev"><div class="rev-head"><span class="rev-ic">${clsIcon(k)}</span><span class="mv rev-mv">${esc(moveLabel(m.san,plyBase()+i))}</span><span class="rev-cls" style="color:${meta.c}">${t(meta.n)}</span><span class="rev-who">${who} · ${i+1}/${len}</span></div><p>${revExplain(i)}</p><div class="evrow"><span class="ev">${t('Arvio')} ${esc(fmtEvW(evW))}</span><div class="evline" aria-hidden="true"><span style="width:${winPct(evW).toFixed(1)}%"></span></div></div>${legend?`<p class="ev rev-legend">${legend}</p>`:''}${last?`<p><b>${esc(resultText())}</b></p>`:''}<div class="rev-btns">${btn('rprev',t('◀ Edellinen')).replace('class="btn','class="btn navdup')}${last?'':btn('rnext',t('Seuraava ▶'),!canRetry).replace('class="btn','class="btn navdup')}${canRetry?btn('rretry',t('Kokeile itse'),true):''}${nx>=0?btn('rerr',errLbl):''}${btn('rstop',t(last?'Valmis':'Lopeta'))}</div></div>`;
 }
 function startReview(v){S.rev={retry:null};S.hint=null;setInfo(false);setView(v==null?0:v);}
