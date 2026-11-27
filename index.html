@@ -947,7 +947,7 @@ body.no-last .sq.last:not(.sel)::before{display:none}
       <p class="legend" style="margin:0">Kieli vaihtuu heti koko sovelluksessa. Englanniksi myös siirtomerkinnät vaihtuvat: R, L, T ja D ovat N, B, R ja Q.</p>
     </div>
     <div class="sv-card"><h3>Shakkimoottori</h3>
-      <label class="setrow"><span>Käytä Stockfishia analyysissä<small>Pelikatsaus, vihjeet, kokeilulauta ja Stockfish-taso. Ladataan netistä (noin 1 Mt).</small></span><input type="checkbox" id="set-sf"></label>
+      <label class="setrow"><span>Käytä Stockfishia analyysissä<small>Pelikatsaus, vihjeet, kokeilulauta ja Stockfish-taso. Ladataan netistä (noin 7 Mt).</small></span><input type="checkbox" id="set-sf"></label>
       <p class="legend" id="set-sf-state" data-dyn style="margin:0"></p>
       <p class="legend" style="margin:0">Tietokonevastustajan tasot Helppo–Mestari käyttävät sovelluksen omaa moottoria, jotta niitä vastaan voi voittaa.</p>
     </div>
@@ -1094,7 +1094,7 @@ Object.assign(EN,{
   'Pelaaminen':'Playing','Korota aina daamiksi':'Always promote to a queen','Ei kysytä korotusnappulaa.':'You won’t be asked which piece.','Varoittaa ennen kuin kone vastaa, jos siirtosi on moka (ei kellopeleissä).':'Warns before the computer replies if your move is a blunder (not in timed games).',
   'Äänet päällä':'Sounds on','Äänenvoimakkuus':'Volume','Kokeile ääntä':'Test sound','Asetukset tallentuvat tälle laitteelle.':'Settings are saved on this device.',
   'Kieli vaihtuu heti koko sovelluksessa. Englanniksi myös siirtomerkinnät vaihtuvat: R, L, T ja D ovat N, B, R ja Q.':'The language changes across the whole app at once. In English the move notation changes too: R, L, T and D become N, B, R and Q.',
-  'Shakkimoottori':'Chess engine','Käytä Stockfishia analyysissä':'Use Stockfish for analysis','Pelikatsaus, vihjeet, kokeilulauta ja Stockfish-taso. Ladataan netistä (noin 1 Mt).':'Game review, hints, trial board and the Stockfish level. Downloaded from the internet (about 1 MB).',
+  'Shakkimoottori':'Chess engine','Käytä Stockfishia analyysissä':'Use Stockfish for analysis','Pelikatsaus, vihjeet, kokeilulauta ja Stockfish-taso. Ladataan netistä (noin 7 Mt).':'Game review, hints, trial board and the Stockfish level. Downloaded from the internet (about 7 MB).',
   'Tietokonevastustajan tasot Helppo–Mestari käyttävät sovelluksen omaa moottoria, jotta niitä vastaan voi voittaa.':'The computer levels Easy–Master use the app’s own engine so that you can beat them.',
   'Pois käytöstä: analyysi tehdään sovelluksen omalla moottorilla.':'Off: analysis uses the app’s own engine.','Käytössä: Stockfish on ladattu ja laskee analyysit.':'On: Stockfish is loaded and runs the analysis.','Ladataan Stockfishia…':'Loading Stockfish…',
   'Stockfishia ei voitu ladata. Analyysi tehdään omalla moottorilla.':'Stockfish could not be loaded. Analysis uses the app’s own engine.','Ladataan, kun sitä tarvitaan.':'Loads when needed.',
@@ -1564,16 +1564,25 @@ const Engine=engineFactory();
    Jos lataus ei onnistu, kaikki toimii omalla moottorilla. */
 const SF=(function(){
   const URL_SF='https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js';
-  let w=null,state='off',cur=null,onState=()=>{};const queue=[];
+  // Ensisijaisesti Stockfish 18 lite (NNUE, WebAssembly, yksi säie): paljon vahvempi. Jos se ei lataudu, käytetään Stockfish 10:tä.
+  const SF18_JS='https://unpkg.com/stockfish@18.0.8/bin/stockfish-18-lite-single.js',SF18_WASM='https://unpkg.com/stockfish@18.0.8/bin/stockfish-18-lite-single.wasm';
+  let w=null,state='off',cur=null,onState=()=>{},ver=0;const queue=[];
   function fail(){state='fail';try{if(w)w.terminate();}catch(_){}w=null;if(cur){cur.res(null);cur=null;}while(queue.length)queue.shift().res(null);onState();}
   function start(){
     if(w||state==='fail'||state==='ready')return;
-    try{w=new Worker(URL.createObjectURL(new Blob([`importScripts('${URL_SF}');`],{type:'text/javascript'})));}catch(_){fail();return;}
-    state='loading';onState();
+    state='loading';onState();boot(18);
+  }
+  function boot(v){
+    ver=v;
+    const fallback=()=>{if(ver!==v||state!=='loading')return;try{if(w)w.terminate();}catch(_){}w=null;if(v===18)boot(10);else fail();};
+    try{
+      const u=URL.createObjectURL(new Blob([`importScripts('${v===18?SF18_JS:URL_SF}');`],{type:'text/javascript'}));
+      w=new Worker(v===18?u+'#'+encodeURIComponent(SF18_WASM):u);
+    }catch(_){w=null;fallback();return;}
     w.onmessage=e=>line(String(e.data));
-    w.onerror=()=>fail();
+    w.onerror=()=>{if(state==='loading')fallback();else fail();};
     w.postMessage('uci');
-    setTimeout(()=>{if(state==='loading')fail();},30000);
+    setTimeout(fallback,v===18?30000:30000);
   }
   function line(l){
     if(l==='uciok'){w.postMessage('setoption name Hash value 32');w.postMessage('isready');return;}
@@ -1593,7 +1602,7 @@ const SF=(function(){
   }
   function next(){if(state!=='ready'||cur||!queue.length)return;cur=queue.shift();cur.score=0;cur.depth=0;cur.lines={};w.postMessage('setoption name MultiPV value '+(cur.mpv||1));w.postMessage('position fen '+cur.fen);w.postMessage('go movetime '+Math.max(60,cur.ms|0));}
   function think(fen,ms,mpv){return new Promise(res=>{if(state!=='ready'){res(null);return;}queue.push({fen,ms,mpv,res});next();});}
-  return {start,think,ready:()=>state==='ready',state:()=>state,onChange(f){onState=f;}};
+  return {start,think,ready:()=>state==='ready',state:()=>state,version:()=>state==='ready'?ver:0,onChange(f){onState=f;}};
 })();
 /* Taustasäie: haku ei jäädytä sivua. Jos Worker ei käynnisty, haku ajetaan pääsäikeessä. */
 const EngineAsync=(function(){
@@ -3335,7 +3344,7 @@ function renderAna(){
   }
   if(a.running){
     const pct=Math.round(a.progress/a.total*100);
-    if(a.stage==='load'){el.innerHTML=`<h3 class="sec">${FE('Ladataan Stockfishia…','Loading Stockfish…')}</h3><p class="legend">${FE('Shakkimoottori ladataan kerran (noin 1 Mt). Sen jälkeen analyysi alkaa.','The chess engine is downloaded once (about 1 MB). The analysis starts right after.')}</p>`;return;}
+    if(a.stage==='load'){el.innerHTML=`<h3 class="sec">${FE('Ladataan Stockfishia…','Loading Stockfish…')}</h3><p class="legend">${FE('Shakkimoottori ladataan kerran (noin 7 Mt). Sen jälkeen analyysi alkaa.','The chess engine is downloaded once (about 7 MB). The analysis starts right after.')}</p>`;return;}
     el.innerHTML=`<h3 class="sec">${a.stage==='refine'?FE('Tarkistetaan virheet tarkemmin…','Double-checking mistakes…'):FE('Analysoidaan…','Analysing…')}</h3><div class="pbar2"><span style="width:${pct}%"></span></div><p class="legend">${(()=>{const rem=Math.max(1,Math.round((a.total-a.progress)*(a.stage==='refine'?4.2:(a.ms||2000)/1000+.05)));const rt=rem>=60?Math.round(rem/60)+' min':rem+' s';return FE(`Asema ${a.progress} / ${a.total} · noin ${rt} jäljellä. Voit jatkaa sivun käyttöä analyysin aikana.`,`Position ${a.progress} / ${a.total} · about ${rt} left. You can keep using the page during the analysis.`);})()}</p>`;
     return;
   }
@@ -3356,7 +3365,7 @@ function renderAna(){
     const better=c.k!=='!!'&&b?` – ${FE('parempi oli','better was')} <span class="mv">${esc(fi(b.san))}</span>${b.line&&b.line.length>1?` <small class="pvl">(${esc(b.line.slice(0,5).map(fi).join(' '))}…)</small>`:''}`:c.k==='!!'?' – '+t('Nerokas siirto').toLowerCase():'';
     mom+=`<li><button data-view="${i+1}"><span class="ann ${A[1]}" style="min-width:2em">${A[0]}</span><span><span class="mv">${esc(moveLabel(hv[i].san,base+i))}</span>${better}. ${t('Arvio')} ${fmtEv(a.evals[i])} → ${fmtEv(a.evals[i+1])}</span></button></li>`;
   });
-  const src=a.sf?FE(`Analysoitu Stockfishilla, noin ${(a.ms/1000).toFixed(1).replace(".",",")} s asemaa kohden. Virheet on tarkistettu pidemmällä haulla.`,`Analysed with Stockfish, about ${(a.ms/1000).toFixed(1)} s per position. Mistakes were double-checked with a longer search.`):FE('Stockfish ei latautunut, joten analyysiin käytettiin sovelluksen omaa moottoria. Tulos on suuntaa antava.','Stockfish did not load, so the app’s own engine was used. Treat the result as a rough guide.');
+  const src=a.sf?FE(`Analysoitu Stockfish ${SF.version()||''} -moottorilla, noin ${(a.ms/1000).toFixed(1).replace(".",",")} s asemaa kohden. Virheet on tarkistettu pidemmällä haulla.`,`Analysed with Stockfish ${SF.version()||''}, about ${(a.ms/1000).toFixed(1)} s per position. Mistakes were double-checked with a longer search.`):FE('Stockfish ei latautunut, joten analyysiin käytettiin sovelluksen omaa moottoria. Tulos on suuntaa antava.','Stockfish did not load, so the app’s own engine was used. Treat the result as a rough guide.');
   el.innerHTML=`<div class="actions" style="margin-top:0"><button class="btn primary" data-act="review">${FE('Käy peli läpi siirto siirrolta','Review the game move by move')}</button></div><h3 class="sec">${FE('Tarkkuus','Accuracy')}</h3><div class="acc">${card('w')}${card('b')}</div><h3 class="sec">${FE('Siirtojen laatu','Move quality')}</h3>${qtab}${ptab?`<h3 class="sec">${FE('Tarkkuus pelin vaiheittain','Accuracy by game phase')}</h3>${ptab}`:''}<h3 class="sec">${FE('Arviokäyrä','Evaluation graph')}</h3>${evalGraph(a,h.length)}<p class="legend">${FE('Vaalea alue on valkean etua, tumma mustan. Klikkaa käyrää siirtyäksesi siihen kohtaan.','The light area is White’s advantage, the dark area Black’s. Click the graph to jump to that point.')}</p><h3 class="sec">${FE('Ratkaisevat hetket','Key moments')}</h3>${mom?`<ul class="moments">${mom}</ul><p class="legend">${FE('Klikkaa hetkeä: lauta näyttää aseman siirron jälkeen. Vihreä nuoli on parempi siirto ja punainen vastustajan paras vastaus. Suluissa on moottorin suosittelema jatko.','Click a moment: the board shows the position after the move. The green arrow is the better move and the red one the opponent’s best reply. In brackets is the engine’s suggested line.')}</p>`:`<p class="empty">${FE('Ei mokia eikä virheitä. Hienosti pelattu!','No blunders or mistakes. Well played!')}</p>`}<p class="legend">${src}</p>`;
 }
 /* ------------------------------------------------------------------ */
