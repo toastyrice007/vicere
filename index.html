@@ -583,6 +583,13 @@ body.no-last .sq.last:not(.sel)::before{display:none}
 .qtab td{padding:5px 8px;border-top:1px solid var(--line)}.qtab td:not(:first-child){text-align:right;font-weight:800;width:72px}.qtab td i{font-style:normal;color:var(--muted);font-weight:600}
 .qtab td:first-child{display:flex;align-items:center;gap:8px;font-weight:700}.qtab .qi{width:20px;height:20px;flex:none}.qtab .qi svg{width:100%;height:100%;display:block}
 .pvl{color:var(--muted);font-size:12.5px}
+.toplist{display:flex;flex-direction:column;gap:5px;background:var(--raise);border-radius:10px;padding:8px 10px;font-size:14px;margin:2px 0 8px}
+.toplist>b{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.tl{display:grid;grid-template-columns:1.5em auto auto minmax(0,1fr) auto;gap:8px;align-items:baseline}
+.tl .tr{color:var(--muted);font-weight:700}.tl .te{font-weight:800;white-space:nowrap}
+.tl small{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px}
+.tl em{font-style:normal;font-size:11.5px;font-weight:800;color:var(--accent-ink);text-transform:uppercase}
+.tl.pl .mv{color:var(--accent-ink)}.tl.off .mv,.tl.off .te{color:var(--bad)}
 .acc .stat .v{font-size:28px}
 .acc .cnts{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:13.5px;font-weight:700;margin-top:4px}
 .graph{width:100%;height:auto;display:block;border-radius:6px;cursor:pointer;background:#21201D}
@@ -1577,7 +1584,7 @@ const SF=(function(){
     }else if(l.startsWith('bestmove')){
       const mv=l.split(' ')[1];const c=cur;cur=null;
       if(!mv||mv==='(none)')c.res(null);
-      else c.res({from:mv.slice(0,2),to:mv.slice(2,4),promotion:mv[4]||undefined,score:c.score,depth:c.depth,sf:true,pv:(c.lines[1]&&c.lines[1].pv)||[mv],alt:c.lines[2]?c.lines[2].score:null});
+      else c.res({from:mv.slice(0,2),to:mv.slice(2,4),promotion:mv[4]||undefined,score:c.score,depth:c.depth,sf:true,pv:(c.lines[1]&&c.lines[1].pv)||[mv],alt:c.lines[2]?c.lines[2].score:null,lines:[c.lines[1],c.lines[2],c.lines[3]]});
       next();
     }
   }
@@ -3191,6 +3198,7 @@ const winPct=cp=>{const c=Math.max(-1500,Math.min(1500,cp));return 50+50*(2/(1+M
 const avg=a=>a.length?a.reduce((s,x)=>s+x,0)/a.length:0;
 /* Pelin analyysi. Stockfish (ladataan tarvittaessa) käy jokaisen aseman läpi kahdella parhaalla linjalla.
    Toisella kierroksella virheiltä näyttävät siirrot tarkistetaan pidemmällä haulla, ettei lyhyen haun kohina tee vääriä mokia. */
+function pv2san(fen,pv,n){const g=new Chess(fen),out=[];for(const u of pv.slice(0,n)){const mv=g.move({from:u.slice(0,2),to:u.slice(2,4),promotion:u[4]||'q'});if(!mv)break;out.push(mv.san);}return out;}
 function isSac(g,m,c){
   const hp=hangingPieces(boardOf(g)).filter(x=>x.p.color===c&&x.p.type!=='p');if(!hp.length)return null;
   const top=hp.reduce((a,b)=>AV[b.p.type]>AV[a.p.type]?b:a);
@@ -3199,7 +3207,7 @@ function isSac(g,m,c){
 async function analyseGame(){
   const h=S.g.history({verbose:true});if(h.length<2||(S.ana&&S.ana.running))return;
   const N=h.length+1;
-  const ana={running:true,done:false,progress:0,total:N,evals:[],best:[],alt:[],cls:[],sig:h.map(m=>m.san).join(' '),stage:'',sf:false};
+  const ana={running:true,done:false,progress:0,total:N,evals:[],best:[],alt:[],top:[],cls:[],sig:h.map(m=>m.san).join(' '),stage:'',sf:false,ms:2000};
   S.ana=ana;showTab('ana');render();
   if(!SF.ready()&&SF.state()!=='fail'){
     ana.stage='load';renderAna();SF.start();const t0=Date.now();
@@ -3207,18 +3215,19 @@ async function analyseGame(){
     ana.stage='';
   }
   ana.sf=SF.ready();
-  const T=ana.sf?Math.max(400,Math.min(900,Math.round(36000/N))):Math.max(450,Math.min(900,Math.round(30000/N)));ana.ms=T;
+  const T=ana.sf?2000:1200;ana.ms=T;
   const fens=[];{const g=new Chess(S.startFen);fens.push(g.fen());for(const m of h){g.move(m.san);fens.push(g.fen());}}
   const cl=s=>Math.abs(s)>Engine.MATE-500?Math.sign(s)*3000:s;
   async function evalAt(i,ms){
-    const g=new Chess(fens[i]);let ev=0,best=null,alt=null;
+    const g=new Chess(fens[i]);let ev=0,best=null,alt=null;const top=[];
     if(g.in_checkmate())ev=g.turn()==='w'?-3000:3000;
     else if(!g.game_over()){
       const legal=g.moves({verbose:true});
-      let r=ana.sf?await SF.think(fens[i],ms,legal.length>1?2:1):null;
+      let r=ana.sf?await SF.think(fens[i],ms,Math.min(3,legal.length)):null;
       if(!r)r=await EngineAsync.think(fens[i],{depth:30,ms,noise:0,own:true});
       if(r){
         const sg=g.turn()==='w'?1:-1;ev=sg*cl(r.score);if(r.alt!=null)alt=sg*cl(r.alt);
+        if(r.lines)for(const L of r.lines){if(!L||!L.pv||!L.pv.length)continue;const sn=pv2san(fens[i],L.pv,8);if(sn.length&&!top.some(x=>x.san===sn[0]))top.push({san:sn[0],ev:sg*cl(L.score),line:sn});}
         const vm=legal.find(x=>x.from===r.from&&x.to===r.to&&(!x.promotion||x.promotion===(r.promotion||'q')));
         if(vm){
           best={from:vm.from,to:vm.to,san:vm.san,line:[vm.san]};
@@ -3226,23 +3235,24 @@ async function analyseGame(){
         }
       }
     }
-    return {ev,best,alt};
+    return {ev,best,alt,top};
   }
-  const put=(i,r)=>{ana.evals[i]=r.ev;ana.best[i]=r.best;ana.alt[i]=r.alt;};
+  const put=(i,r)=>{ana.evals[i]=r.ev;ana.best[i]=r.best;ana.alt[i]=r.alt;ana.top[i]=r.top;};
   for(let i=0;i<N;i++){
     if(S.ana!==ana)return;
     const r=await evalAt(i,T);if(S.ana!==ana)return;put(i,r);
     ana.progress=i+1;if(S.tab==='ana')renderAna();renderCoach();
   }
-  const lossOf=i=>{const sg=h[i].color==='w'?1:-1;return Math.max(0,winPct(sg*ana.evals[i])-winPct(sg*ana.evals[i+1]));};
+  const afterEv=i=>{const tp=ana.top[i]&&ana.top[i].find(x=>x.san===h[i].san);return tp?tp.ev:ana.evals[i+1];};
+  const lossOf=i=>{const sg=h[i].color==='w'?1:-1;return Math.max(0,winPct(sg*ana.evals[i])-winPct(sg*afterEv(i)));};
   // Tarkistuskierros: virheiltä näyttävät siirrot ja mahdolliset uhraukset uudelleen pidemmällä haulla
   const re=new Set();
   {const g=new Chess(S.startFen);
    for(let i=0;i<h.length;i++){g.move(h[i].san);const L=lossOf(i);if(L>=7||(L<=3&&isSac(g,h[i],h[i].color))){re.add(i);re.add(i+1);}}}
-  const reList=[...re].sort((a,b)=>a-b).slice(0,20);
+  const reList=[...re].sort((a,b)=>a-b).slice(0,60);
   if(reList.length){
     ana.stage='refine';ana.total=N+reList.length;
-    const T2=Math.max(1200,T*2);
+    const T2=Math.max(4000,T*2);
     for(const i of reList){
       if(S.ana!==ana)return;
       const r=await evalAt(i,T2);if(S.ana!==ana)return;put(i,r);
@@ -3260,7 +3270,7 @@ async function analyseGame(){
   const cpc=x=>Math.max(-1000,Math.min(1000,x));
   for(let i=0;i<h.length;i++){
     const m=h[i],c=m.color,sg=c==='w'?1:-1;
-    const L=lossOf(i);const wb=winPct(sg*ana.evals[i]),wa=winPct(sg*ana.evals[i+1]);
+    const L=lossOf(i);const wb=winPct(sg*ana.evals[i]),wa=winPct(sg*afterEv(i));
     // Pelivaihe ennen siirtoa: upseerien määrä laudalla
     const mat=[...fens[i].split(' ')[0]].reduce((s,ch)=>s+({n:3,b:3,r:5,q:9}[ch.toLowerCase()]||0),0);
     const phase=mat<=26?'e':(i<20&&mat>=50)?'o':'m';
@@ -3281,7 +3291,7 @@ async function analyseGame(){
     const a1=Math.max(0,Math.min(100,103.1668*Math.exp(-0.04354*L)-3.1669));
     const lo=Math.max(0,Math.min(i-ws+2,WP.length-ws));const w=Math.max(.5,Math.min(12,sd(WP.slice(lo,lo+ws))));
     per[c].push([a1,w]);ph[c][phase].push(a1);
-    cpl[c].push(Math.max(0,cpc(sg*ana.evals[i])-cpc(sg*ana.evals[i+1])));
+    cpl[c].push(Math.max(0,cpc(sg*ana.evals[i])-cpc(sg*afterEv(i))));
     // Valmentaja: luokitellaan omat virheet (vain pelissä konetta vastaan tai omassa tuodussa pelissä)
     const imp=S.imported;
     if(((firstTime&&S.mode==='play'&&c===S.human)||(imp&&!imp.counted&&c===imp.me))&&(k==='??'||k==='?'||k==='miss')){
@@ -3296,7 +3306,7 @@ async function analyseGame(){
   const gameAcc=L=>{if(!L.length)return 0;const sw=L.reduce((s,x)=>s+x[1],0);const wm=L.reduce((s,x)=>s+x[0]*x[1],0)/sw;const hm=L.length/L.reduce((s,x)=>s+1/Math.max(x[0],.5),0);return (wm+hm)/2;};
   ana.acc={w:Math.round(gameAcc(per.w)),b:Math.round(gameAcc(per.b))};
   // Pelitaso: arvio keskimääräisestä sotilasyksikkömenetyksestä (vähintään 8 omaa siirtoa)
-  const rt=c=>cpl[c].length<8?null:Math.max(100,Math.min(3000,Math.round(3100*Math.exp(-0.01*avg(cpl[c]))/50)*50));
+  const rt=c=>cpl[c].length<8?null:Math.max(100,Math.min(2800,Math.round(3100*Math.exp(-0.01*avg(cpl[c]))/50)*50));
   ana.rating={w:rt('w'),b:rt('b')};
   ana.phase={w:{},b:{}};for(const c of 'wb')for(const p of 'ome')ana.phase[c][p]=ph[c][p].length?Math.round(avg(ph[c][p])):null;
   ana.cnt=cnt;ana.running=false;ana.done=true;
@@ -3317,13 +3327,13 @@ function renderAna(){
   const el=$('#tab-ana');if(!el)return;
   const h=S.g.history();const a=S.ana;
   if(!a){
-    el.innerHTML=`<h3 class="sec">${FE('Pelin analyysi','Game analysis')}</h3><p class="op-desc" style="font-size:16px">${FE('Moottori käy läpi jokaisen siirron ja merkitsee mokat (??), virheet (?) ja epätarkkuudet (?!). Näet arviokäyrän, kummankin pelaajan tarkkuuden ja hetket, joissa peli kääntyi.','The engine goes through every move and marks blunders (??), mistakes (?) and inaccuracies (?!). You see the evaluation graph, both players’ accuracy and the moments where the game turned.')}</p><div class="actions"><button class="btn primary" data-act="analyse"${h.length<2?' disabled':''}>${FE('Analysoi peli','Analyse game')}</button><button class="btn" data-act="import">${t('Tuo oma peli (PGN)')}</button></div><p class="legend">${h.length<2?FE('Pelaa ensin muutama siirto.','Play a few moves first.'):(()=>{const n=h.length+1,s=Math.ceil(n*Math.max(400,Math.min(900,36000/n))/1000)+8;return FE(`Tarkka analyysi Stockfishilla kestää noin ${s} sekuntia.`,`The full Stockfish analysis takes about ${s} seconds.`);})()}</p>`;
+    el.innerHTML=`<h3 class="sec">${FE('Pelin analyysi','Game analysis')}</h3><p class="op-desc" style="font-size:16px">${FE('Moottori käy läpi jokaisen siirron ja merkitsee mokat (??), virheet (?) ja epätarkkuudet (?!). Näet arviokäyrän, kummankin pelaajan tarkkuuden ja hetket, joissa peli kääntyi.','The engine goes through every move and marks blunders (??), mistakes (?) and inaccuracies (?!). You see the evaluation graph, both players’ accuracy and the moments where the game turned.')}</p><div class="actions"><button class="btn primary" data-act="analyse"${h.length<2?' disabled':''}>${FE('Analysoi peli','Analyse game')}</button><button class="btn" data-act="import">${t('Tuo oma peli (PGN)')}</button></div><p class="legend">${h.length<2?FE('Pelaa ensin muutama siirto.','Play a few moves first.'):(()=>{const n=h.length+1,mn=Math.max(1,Math.round((n*2.7+5)/60));return FE(`Perusteellinen analyysi Stockfishilla kestää noin ${mn} min. Moottori miettii jokaista asemaa 2 sekuntia ja tarkistaa virheet vielä pidemmällä haulla.`,`The thorough Stockfish analysis takes about ${mn} min. The engine thinks 2 seconds per position and double-checks mistakes with a longer search.`);})()}</p>`;
     return;
   }
   if(a.running){
     const pct=Math.round(a.progress/a.total*100);
     if(a.stage==='load'){el.innerHTML=`<h3 class="sec">${FE('Ladataan Stockfishia…','Loading Stockfish…')}</h3><p class="legend">${FE('Shakkimoottori ladataan kerran (noin 1 Mt). Sen jälkeen analyysi alkaa.','The chess engine is downloaded once (about 1 MB). The analysis starts right after.')}</p>`;return;}
-    el.innerHTML=`<h3 class="sec">${a.stage==='refine'?FE('Tarkistetaan virheet tarkemmin…','Double-checking mistakes…'):FE('Analysoidaan…','Analysing…')}</h3><div class="pbar2"><span style="width:${pct}%"></span></div><p class="legend">${FE(`Asema ${a.progress} / ${a.total}. Voit jatkaa sivun käyttöä analyysin aikana.`,`Position ${a.progress} / ${a.total}. You can keep using the page during the analysis.`)}</p>`;
+    el.innerHTML=`<h3 class="sec">${a.stage==='refine'?FE('Tarkistetaan virheet tarkemmin…','Double-checking mistakes…'):FE('Analysoidaan…','Analysing…')}</h3><div class="pbar2"><span style="width:${pct}%"></span></div><p class="legend">${(()=>{const rem=Math.max(1,Math.round((a.total-a.progress)*(a.stage==='refine'?4.2:(a.ms||2000)/1000+.05)));const rt=rem>=60?Math.round(rem/60)+' min':rem+' s';return FE(`Asema ${a.progress} / ${a.total} · noin ${rt} jäljellä. Voit jatkaa sivun käyttöä analyysin aikana.`,`Position ${a.progress} / ${a.total} · about ${rt} left. You can keep using the page during the analysis.`);})()}</p>`;
     return;
   }
   if(a.sig!==h.join(' ')){
@@ -3434,6 +3444,13 @@ function revExplain(i){
   }
   return parts.join(' ');
 }
+/* Katsaus: moottorin kolme parasta siirtoa ennen pelattua siirtoa, ja pelatun siirron sija */
+function topList(i){
+  const a=S.ana,tp=a.top&&a.top[i];if(!tp||!tp.length)return '';
+  const m=S.g.history({verbose:true})[i];const inTop=tp.some(x=>x.san===m.san);
+  const row=(r,san,ev,line,pl,cls)=>'<div class="tl'+(pl?' pl':'')+(cls?' '+cls:'')+'"><span class="tr">'+r+'</span><span class="mv">'+esc(fi(san))+'</span><span class="te">'+esc(fmtEvW(ev))+'</span><small>'+esc(line.map(fi).join(' '))+'</small>'+(pl?'<em>'+FE('pelattu','played')+'</em>':'')+'</div>';
+  return '<div class="toplist"><b>'+FE('Parhaat siirrot tässä asemassa','Best moves in this position')+'</b>'+tp.map((x,j)=>row((j+1)+'.',x.san,x.ev,x.line.slice(1,7),x.san===m.san,'')).join('')+(inTop?'':row('–',m.san,a.evals[i+1],[],true,'off'))+'</div>';
+}
 const revMe=()=>S.mode==='play'?S.human:S.imported?S.imported.me:null;
 const oppLabel=()=>S.imported?'Vastustaja':'Tietokone';
 function resultText(){
@@ -3466,7 +3483,7 @@ function renderReview(el){
   const evW=a.evals[i+1];const last=i===len-1;
   const canRetry=MISTAKE_K.includes(k)&&!!a.best[i]&&(!me||m.color===me);
   const legend=t(['??','?','miss'].includes(k)?'Vihreä nuoli: parempi siirto. Punainen nuoli: vastustajan paras vastaus.':k==='?!'?'Vihreä nuoli: parempi siirto.':'');
-  el.innerHTML=`<div class="rev"><div class="rev-head"><span class="rev-ic">${clsIcon(k)}</span><span class="mv rev-mv">${esc(moveLabel(m.san,plyBase()+i))}</span><span class="rev-cls" style="color:${meta.c}">${t(meta.n)}</span><span class="rev-who">${who} · ${i+1}/${len}</span></div><p>${revExplain(i)}</p><div class="evrow"><span class="ev">${t('Arvio')} ${esc(fmtEvW(evW))}</span><div class="evline" aria-hidden="true"><span style="width:${winPct(evW).toFixed(1)}%"></span></div></div>${legend?`<p class="ev rev-legend">${legend}</p>`:''}${last?`<p><b>${esc(resultText())}</b></p>`:''}<div class="rev-btns">${btn('rprev',t('◀ Edellinen')).replace('class="btn','class="btn navdup')}${last?'':btn('rnext',t('Seuraava ▶'),!canRetry).replace('class="btn','class="btn navdup')}${canRetry?btn('rretry',t('Kokeile itse'),true):''}${nx>=0?btn('rerr',errLbl):''}${btn('rstop',t(last?'Valmis':'Lopeta'))}</div></div>`;
+  el.innerHTML=`<div class="rev"><div class="rev-head"><span class="rev-ic">${clsIcon(k)}</span><span class="mv rev-mv">${esc(moveLabel(m.san,plyBase()+i))}</span><span class="rev-cls" style="color:${meta.c}">${t(meta.n)}</span><span class="rev-who">${who} · ${i+1}/${len}</span></div><p>${revExplain(i)}</p>${topList(i)}<div class="evrow"><span class="ev">${t('Arvio')} ${esc(fmtEvW(evW))}</span><div class="evline" aria-hidden="true"><span style="width:${winPct(evW).toFixed(1)}%"></span></div></div>${legend?`<p class="ev rev-legend">${legend}</p>`:''}${last?`<p><b>${esc(resultText())}</b></p>`:''}<div class="rev-btns">${btn('rprev',t('◀ Edellinen')).replace('class="btn','class="btn navdup')}${last?'':btn('rnext',t('Seuraava ▶'),!canRetry).replace('class="btn','class="btn navdup')}${canRetry?btn('rretry',t('Kokeile itse'),true):''}${nx>=0?btn('rerr',errLbl):''}${btn('rstop',t(last?'Valmis':'Lopeta'))}</div></div>`;
 }
 function startReview(v){S.rev={retry:null};S.hint=null;setInfo(false);setView(v==null?0:v);}
 function startRetry(){
